@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://23c431cv5wuw"]
 
-[ext_resource type="Script" path="res://Scripts/Subwindows/GitConflict.gd" id="1_t14ey"]
+[ext_resource type="Script" uid="uid://bn2xmoafjt4as" path="res://Scripts/Subwindows/GitConflict.gd" id="1_t14ey"]
 
 [node name="GitConflict" type="Window"]
 title = "Git Conflict"

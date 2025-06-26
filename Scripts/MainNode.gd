@@ -61,6 +61,7 @@ func _ready() -> void:
 	tree.root.close_requested.connect(func() -> void:
 		if Handle.is_modified:
 			Handle.uc_window = Handle.uc_scene.instantiate()
+			Handle.uc_window.callback.connect(tree.quit)
 			add_child(Handle.uc_window)
 		else:
 			tree.quit(0)

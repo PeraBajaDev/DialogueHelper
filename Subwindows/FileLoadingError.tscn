@@ -1,0 +1,27 @@
+[gd_scene load_steps=2 format=3 uid="uid://dhjdcxbdyiv8v"]
+
+[ext_resource type="Script" uid="uid://vxkq1gjloko8" path="res://Scripts/Subwindows/StyleError.gd" id="1_pwwx5"]
+
+[node name="FileLoadingError" type="Window"]
+title = "File Loading Error"
+initial_position = 1
+size = Vector2i(600, 130)
+unresizable = true
+always_on_top = true
+script = ExtResource("1_pwwx5")
+
+[node name="Label" type="Label" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -229.0
+offset_top = 21.0
+offset_right = 229.0
+offset_bottom = 96.0
+grow_horizontal = 2
+text = "The file that was being tried to load is invalid and will
+not be loaded to prevent any kind of errors from ocurring.
+Please get a file that's compatible with Dialogue Helper."
+horizontal_alignment = 1
+
+[connection signal="close_requested" from="." to="." method="_on_close_requested"]
