@@ -1,2 +1,5 @@
-# Godot 4+ specific ignores
-.godot/
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/

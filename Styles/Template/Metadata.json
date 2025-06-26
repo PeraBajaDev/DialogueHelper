@@ -1,7 +1,7 @@
 {
 	"Name": "Template",
 	"Author": "ryi3r",
-	"Script": "Script.gd",
-	"NewLines": [],
+	"ScriptPath": "Script.cs",
+	"NewLines": ["\n"],
 	"Ignore": []
 }
