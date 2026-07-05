@@ -1,0 +1,70 @@
+[gd_scene load_steps=2 format=3 uid="uid://ccapqxv7t4geo"]
+
+[ext_resource type="Script" uid="uid://bui46osv6l0xg" path="res://Scripts/Subwindows/StyleSelector.gd" id="1_styles"]
+
+[node name="StyleSelector" type="Window"]
+title = "Welcome to Dialogue Helper"
+initial_position = 2
+size = Vector2i(440, 200)
+transient = true
+exclusive = true
+unresizable = true
+script = ExtResource("1_styles")
+
+[node name="Label" type="Label" parent="."]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 420.0
+offset_bottom = 70.0
+text = "Several Styles were detected.
+Which one would you like to use?"
+autowrap_mode = 2
+
+[node name="OptionButton" type="OptionButton" parent="."]
+offset_left = 20.0
+offset_top = 80.0
+offset_right = 420.0
+offset_bottom = 111.0
+
+[node name="HintLabel" type="Label" parent="."]
+offset_left = 20.0
+offset_top = 120.0
+offset_right = 420.0
+offset_bottom = 143.0
+theme_override_font_sizes/font_size = 11
+text = "(You can change this later in Settings.)"
+horizontal_alignment = 1
+
+[node name="OkButton" type="Button" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -35.0
+offset_right = -69.0
+offset_bottom = -4.0
+grow_horizontal = 0
+grow_vertical = 0
+focus_mode = 0
+text = "OK"
+
+[node name="CancelButton" type="Button" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -65.0
+offset_top = -35.0
+offset_right = -5.0
+offset_bottom = -4.0
+grow_horizontal = 0
+grow_vertical = 0
+focus_mode = 0
+text = "Cancel"
+
+[connection signal="close_requested" from="." to="." method="_on_close_requested"]
+[connection signal="pressed" from="OkButton" to="." method="_on_ok_button_pressed"]
+[connection signal="pressed" from="CancelButton" to="." method="_on_cancel_button_pressed"]

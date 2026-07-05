@@ -1,0 +1,6 @@
+{
+    "Name": "Shop Talk",
+    "Texture": "Box3.png",
+    "Scale": 1,
+    "DialogueOffset": [20, 30]
+}

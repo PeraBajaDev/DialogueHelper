@@ -1,0 +1,8 @@
+{
+    "Name": "Otros",
+    "Texture": "Box7.png",
+    "Scale": 1,
+    "SupportsPortrait": false,
+    "DialogueOffset": [20, 20],
+    "PortraitOffset": [145, 20]
+}

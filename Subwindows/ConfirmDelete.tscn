@@ -1,0 +1,55 @@
+[gd_scene load_steps=2 format=3 uid="uid://b0jklm3npqrst"]
+
+[ext_resource type="Script" path="res://Scripts/Subwindows/ConfirmDelete.gd" id="1_cdelm"]
+
+[node name="ConfirmDelete" type="Window"]
+title = "Confirm deletion"
+initial_position = 2
+size = Vector2i(520, 260)
+transient = true
+exclusive = true
+unresizable = true
+script = ExtResource("1_cdelm")
+
+[node name="Label" type="Label" parent="."]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 500.0
+offset_bottom = 210.0
+text = "Are you sure?"
+autowrap_mode = 2
+vertical_alignment = 0
+
+[node name="OkButton" type="Button" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -180.0
+offset_top = -35.0
+offset_right = -100.0
+offset_bottom = -4.0
+grow_horizontal = 0
+grow_vertical = 0
+focus_mode = 0
+text = "Delete"
+
+[node name="CancelButton" type="Button" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -90.0
+offset_top = -35.0
+offset_right = -10.0
+offset_bottom = -4.0
+grow_horizontal = 0
+grow_vertical = 0
+focus_mode = 0
+text = "Cancel"
+
+[connection signal="close_requested" from="." to="." method="_on_close_requested"]
+[connection signal="pressed" from="OkButton" to="." method="_on_ok_button_pressed"]
+[connection signal="pressed" from="CancelButton" to="." method="_on_cancel_button_pressed"]
