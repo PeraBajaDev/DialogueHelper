@@ -28,10 +28,10 @@ class ValidCloseSign extends RefCounted:
 	func to_label_text() -> String:
 		if ok:
 			return "✓ Signos OK"
-		var _parts := ""
+		var parts := ""
 		if not missing.is_empty():
-			_parts = "Falta cerrar: " + missing
-		return "⚠ " + "  ·  " + _parts
+			parts = "Falta cerrar: " + missing
+		return "⚠ " + "  ·  " + parts
 
 static func validate_string(string: IStringContainer) -> ValidCloseSign:
 	var valid_close_sign := ValidCloseSign.new()

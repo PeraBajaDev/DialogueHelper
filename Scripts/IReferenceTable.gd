@@ -21,170 +21,170 @@ func clear() -> void:
 	last_error = ""
 	header_row_index = -1
 
-func load_from_csv(_path: String) -> bool:
+func load_from_csv(path: String) -> bool:
 	clear()
-	if not FileAccess.file_exists(_path):
-		last_error = "Reference CSV does not exist:\n%s" % _path
+	if not FileAccess.file_exists(path):
+		last_error = "Reference CSV does not exist:\n%s" % path
 		return false
-	var _f := FileAccess.open(_path, FileAccess.READ)
-	if _f == null:
-		last_error = "Could not open reference CSV (error %d):\n%s" % [FileAccess.get_open_error(), _path]
+	var csv_file := FileAccess.open(path, FileAccess.READ)
+	if csv_file == null:
+		last_error = "Could not open reference CSV (error %d):\n%s" % [FileAccess.get_open_error(), path]
 		return false
-	var _text := _f.get_as_text()
-	_f.close()
-	var _rows: Array = _parse_csv(_text)
+	var text := csv_file.get_as_text()
+	csv_file.close()
+	var rows: Array = _parse_csv(text)
 	if last_error != "":
 		# _parse_csv only fills last_error for malformed quoted data.
 		return false
-	if _rows.is_empty():
-		last_error = "Reference CSV is empty:\n%s" % _path
+	if rows.is_empty():
+		last_error = "Reference CSV is empty:\n%s" % path
 		return false
 
-	var _cols: Dictionary = _find_columns(_rows)
-	var _key_col: int = _dict_int(_cols, "key")
-	var _notes_col: int = _dict_int(_cols, "notes")
-	var _es_from_en_col: int = _dict_int(_cols, "es_from_en")
-	var _es_from_jp_col: int = _dict_int(_cols, "es_from_jp")
-	if _key_col == -1:
+	var cols: Dictionary = _find_columns(rows)
+	var key_col: int = _dict_int(cols, "key")
+	var notes_col: int = _dict_int(cols, "notes")
+	var es_from_en_col: int = _dict_int(cols, "es_from_en")
+	var es_from_jp_col: int = _dict_int(cols, "es_from_jp")
+	if key_col == -1:
 		last_error = "Could not find a 'Categoría/Clave' column in the reference CSV."
 		return false
-	if _notes_col == -1 and _es_from_en_col == -1 and _es_from_jp_col == -1:
+	if notes_col == -1 and es_from_en_col == -1 and es_from_jp_col == -1:
 		last_error = "Reference CSV was found, but it does not contain Notes / ES from EN / ES from JP columns."
 		return false
 
-	for _i in range(header_row_index + 1, _rows.size()):
-		var _row: Array = _rows[_i]
-		var _key := _cell(_row, _key_col).strip_edges()
-		if _key == "":
+	for i in range(header_row_index + 1, rows.size()):
+		var row: Array = rows[i]
+		var key := _cell(row, key_col).strip_edges()
+		if key == "":
 			continue
-		var _notes := _cell(_row, _notes_col).strip_edges()
-		var _en := _cell(_row, _es_from_en_col).strip_edges()
-		var _jp := _cell(_row, _es_from_jp_col).strip_edges()
+		var notes := _cell(row, notes_col).strip_edges()
+		var en := _cell(row, es_from_en_col).strip_edges()
+		var jp := _cell(row, es_from_jp_col).strip_edges()
 		# Category rows often have a key but no useful reference fields.
-		if _notes == "" and _en == "" and _jp == "":
+		if notes == "" and en == "" and jp == "":
 			continue
-		entries[_key] = {
-			FIELD_NOTES: _notes,
-			FIELD_ES_FROM_EN: _en,
-			FIELD_ES_FROM_JP: _jp,
+		entries[key] = {
+			FIELD_NOTES: notes,
+			FIELD_ES_FROM_EN: en,
+			FIELD_ES_FROM_JP: jp,
 		}
 
-	source_path = _path
+	source_path = path
 	last_error = ""
 	return true
 
-func get_reference(_clave: String) -> Dictionary:
-	if _clave == "" or not entries.has(_clave):
+func get_reference(key: String) -> Dictionary:
+	if key == "" or not entries.has(key):
 		return {}
-	return entries[_clave]
+	return entries[key]
 
-func has_reference(_clave: String) -> bool:
-	return _clave != "" and entries.has(_clave)
+func has_reference(key: String) -> bool:
+	return key != "" and entries.has(key)
 
 func loaded_count() -> int:
 	return entries.size()
 
 
-func _dict_int(_dict: Dictionary, _key: String, _default: int = -1) -> int:
+func _dict_int(dict: Dictionary, key: String, default: int = -1) -> int:
 	# `_find_columns()` only stores integers, but Dictionary.get() returns Variant.
 	# Use an explicit cast so Godot's static analyzer does not warn about
 	# passing a Variant to int().
-	return _dict.get(_key, _default) as int
+	return dict.get(key, default) as int
 
-func _find_columns(_rows: Array) -> Dictionary:
-	var _cols := {
+func _find_columns(rows: Array) -> Dictionary:
+	var cols := {
 		"key": -1,
 		"notes": -1,
 		"es_from_en": -1,
 		"es_from_jp": -1,
 	}
 	header_row_index = -1
-	for _r in range(_rows.size()):
-		var _row: Array = _rows[_r]
-		for _c in range(_row.size()):
-			var _h := str(_row[_c]).strip_edges()
-			if _is_key_header(_h):
-				_cols["key"] = _c
-				header_row_index = _r
+	for i in range(rows.size()):
+		var row: Array = rows[i]
+		for _c in range(row.size()):
+			var header := str(row[_c]).strip_edges()
+			if _is_key_header(header):
+				cols["key"] = _c
+				header_row_index = i
 				break
 		if header_row_index != -1:
 			break
 	if header_row_index == -1:
-		return _cols
+		return cols
 
-	var _header: Array = _rows[header_row_index]
+	var _header: Array = rows[header_row_index]
 	for _c in range(_header.size()):
-		var _h := str(_header[_c]).strip_edges()
-		if _is_notes_header(_h):
-			_cols["notes"] = _c
-		elif _is_es_from_en_header(_h):
-			_cols["es_from_en"] = _c
-		elif _is_es_from_jp_header(_h):
-			_cols["es_from_jp"] = _c
-	return _cols
+		var header := str(_header[_c]).strip_edges()
+		if _is_notes_header(header):
+			cols["notes"] = _c
+		elif _is_es_from_en_header(header):
+			cols["es_from_en"] = _c
+		elif _is_es_from_jp_header(header):
+			cols["es_from_jp"] = _c
+	return cols
 
-func _is_key_header(_h: String) -> bool:
-	return _h == "Categoría/Clave" or _h == "Categoria/Clave" or _h == "Clave" or _h.findn("clave") != -1
+func _is_key_header(header: String) -> bool:
+	return header == "Categoría/Clave" or header == "Categoria/Clave" or header == "Clave" or header.findn("clave") != -1
 
-func _is_notes_header(_h: String) -> bool:
-	return _h.findn("notas") != -1 or _h.findn("notes") != -1
+func _is_notes_header(header: String) -> bool:
+	return header.findn("notas") != -1 or header.findn("notes") != -1
 
-func _is_es_from_en_header(_h: String) -> bool:
-	return _h.findn("desde") != -1 and (_h.findn("inglés") != -1 or _h.findn("ingles") != -1 or _h.findn("english") != -1)
+func _is_es_from_en_header(header: String) -> bool:
+	return header.findn("desde") != -1 and (header.findn("inglés") != -1 or header.findn("ingles") != -1 or header.findn("english") != -1)
 
-func _is_es_from_jp_header(_h: String) -> bool:
-	return _h.findn("desde") != -1 and (_h.findn("japonés") != -1 or _h.findn("japones") != -1 or _h.findn("japanese") != -1)
+func _is_es_from_jp_header(header: String) -> bool:
+	return header.findn("desde") != -1 and (header.findn("japonés") != -1 or header.findn("japones") != -1 or header.findn("japanese") != -1)
 
-func _cell(_row: Array, _idx: int) -> String:
-	if _idx < 0 or _idx >= _row.size():
+func _cell(row: Array, index: int) -> String:
+	if index < 0 or index >= row.size():
 		return ""
-	return str(_row[_idx])
+	return str(row[index])
 
 # Minimal RFC4180-style parser: supports quoted cells, doubled quotes and
 # newlines inside quoted cells. This matters because Google Sheets exports some
 # dialogue/reference cells with embedded line breaks.
-func _parse_csv(_text: String) -> Array:
-	var _rows: Array = []
-	var _row: Array[String] = []
-	var _cell_text := ""
-	var _in_quotes := false
-	var _i := 0
-	while _i < _text.length():
-		var _ch := _text.substr(_i, 1)
-		if _in_quotes:
-			if _ch == "\"":
-				if _i + 1 < _text.length() and _text.substr(_i + 1, 1) == "\"":
-					_cell_text += "\""
-					_i += 1
+func _parse_csv(text: String) -> Array:
+	var rows: Array = []
+	var row: Array[String] = []
+	var cell_text := ""
+	var in_quotes := false
+	var i := 0
+	while i < text.length():
+		var character := text.substr(i, 1)
+		if in_quotes:
+			if character == "\"":
+				if i + 1 < text.length() and text.substr(i + 1, 1) == "\"":
+					cell_text += "\""
+					i += 1
 				else:
-					_in_quotes = false
+					in_quotes = false
 			else:
-				_cell_text += _ch
+				cell_text += character
 		else:
-			if _ch == "\"":
-				_in_quotes = true
-			elif _ch == ",":
-				_row.append(_cell_text)
-				_cell_text = ""
-			elif _ch == "\n":
-				_row.append(_cell_text)
-				_rows.append(_row)
-				_row = []
-				_cell_text = ""
-			elif _ch == "\r":
-				_row.append(_cell_text)
-				_rows.append(_row)
-				_row = []
-				_cell_text = ""
-				if _i + 1 < _text.length() and _text.substr(_i + 1, 1) == "\n":
-					_i += 1
+			if character == "\"":
+				in_quotes = true
+			elif character == ",":
+				row.append(cell_text)
+				cell_text = ""
+			elif character == "\n":
+				row.append(cell_text)
+				rows.append(row)
+				row = []
+				cell_text = ""
+			elif character == "\r":
+				row.append(cell_text)
+				rows.append(row)
+				row = []
+				cell_text = ""
+				if i + 1 < text.length() and text.substr(i + 1, 1) == "\n":
+					i += 1
 			else:
-				_cell_text += _ch
-		_i += 1
-	if _in_quotes:
+				cell_text += character
+		i += 1
+	if in_quotes:
 		last_error = "Malformed reference CSV: a quoted cell was not closed."
 		return []
-	if _cell_text != "" or !_row.is_empty():
-		_row.append(_cell_text)
-		_rows.append(_row)
-	return _rows
+	if cell_text != "" or !row.is_empty():
+		row.append(cell_text)
+		rows.append(row)
+	return rows

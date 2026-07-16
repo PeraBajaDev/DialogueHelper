@@ -4,20 +4,20 @@ class_name ILastEdited
 var timestamp := -1
 var author := ""
 
-func _init(_json: Variant = null, _timestamp: Variant = null, _author: Variant = null) -> void:
-	if _json is Dictionary:
-		var _jd: Dictionary = _json
-		if _jd.has(&"Timestamp"):
-			timestamp = _jd.Timestamp as int
-		if _jd.has(&"Author"):
-			author = str(_jd.Author)
-	elif _json is String:
-		var _data := str(_json).split(&",")
+func _init(json: Variant = null, local_timestamp: Variant = null, author_name: Variant = null) -> void:
+	if json is Dictionary:
+		var json_data: Dictionary = json
+		if json_data.has(&"Timestamp"):
+			timestamp = json_data.Timestamp as int
+		if json_data.has(&"Author"):
+			author = str(json_data.Author)
+	elif json is String:
+		var _data := str(json).split(&",")
 		author = _data[0].uri_decode()
 		timestamp = int(_data[1])
-	elif _timestamp is int && _author is String:
-		timestamp = _timestamp
-		author = _author
+	elif local_timestamp is int && author_name is String:
+		timestamp = local_timestamp
+		author = author_name
 
 func _to_string() -> String:
 	return "%s,%s" % [author.uri_encode(), str(int(timestamp))]

@@ -92,14 +92,14 @@ var main_node: WDialogueHelper = null
 # Usa la ruta globalizada para que también funcione en builds donde los
 # Styles están al lado del .exe (no embebidos en el .pck).
 func list_available_styles() -> PackedStringArray:
-	var _result := PackedStringArray()
-	var _styles_dir := ProjectSettings.globalize_path("res://Styles/")
-	if not DirAccess.dir_exists_absolute(_styles_dir):
-		return _result
-	for _dir in DirAccess.get_directories_at(_styles_dir):
-		if FileAccess.file_exists(style_get_path("Metadata.json", _dir)):
-			_result.append(_dir)
-	return _result
+	var result := PackedStringArray()
+	var styles_directories := ProjectSettings.globalize_path("res://Styles/")
+	if not DirAccess.dir_exists_absolute(styles_directories):
+		return result
+	for directory in DirAccess.get_directories_at(styles_directories):
+		if FileAccess.file_exists(style_get_path("Metadata.json", directory)):
+			result.append(directory)
+	return result
 
 # Elige un Style por defecto razonable cuando el usuario no ha indicado uno
 # o cuando el indicado ya no existe en disco. Preferencias en orden:
@@ -108,20 +108,20 @@ func list_available_styles() -> PackedStringArray:
 #   3) Primer Style alfabético disponible
 # Devuelve "" si no hay ninguno.
 func pick_default_style() -> String:
-	var _available := list_available_styles()
-	if _available.is_empty():
+	var available := list_available_styles()
+	if available.is_empty():
 		return ""
-	for _preferred: String in [&"Deltarune", &"Template"]:
-		if _preferred in _available:
-			return _preferred
-	return _available[0]
+	for preferred: String in [&"Deltarune", &"Template"]:
+		if preferred in available:
+			return preferred
+	return available[0]
 
 # Mensaje amigable cuando no hay ningún Style en disco. Reutiliza la ventana
 # StyleError porque ya está cableada y queue_free al cerrar; no merece un
 # .tscn aparte.
 func _show_no_styles_message() -> void:
 	se_window = se_scene.instantiate()
-	var _msg := "No Styles were found.\n\n" \
+	var message := "No Styles were found.\n\n" \
 		+ "To use Dialogue Helper, place at least one Style folder " \
 		+ "(such as \"Deltarune\") inside the \"Styles\" directory next to " \
 		+ "the executable.\n\n" \
@@ -134,12 +134,12 @@ func _show_no_styles_message() -> void:
 		+ "You can download Styles from:\n" \
 		+ "  https://github.com/ryi3r/DialogueHelper/\n\n" \
 		+ "Close the app, add the Styles folder, and re-open."
-	(se_window.get_node(^"TextEdit") as TextEdit).text = _msg
+	(se_window.get_node(^"TextEdit") as TextEdit).text = message
 	add_child(se_window)
 
-func load_style(_style: Variant = null) -> void:
-	if _style is String:
-		style = _style
+func load_style(new_style: Variant = null) -> void:
+	if new_style is String:
+		style = new_style
 	font_metadata.clear()
 	box_metadata.clear()
 	style_metadata.clear()
@@ -152,16 +152,16 @@ func load_style(_style: Variant = null) -> void:
 	# preferencia guardada, o last_style.txt apunta a una carpeta borrada),
 	# intentamos un fallback automático antes de mostrar pantalla de error.
 	if not FileAccess.file_exists(style_get_path(&"Metadata.json")):
-		var _picked := pick_default_style()
-		if _picked == "":
+		var picked := pick_default_style()
+		if picked == "":
 			# Caso "no hay nada en disco": mensaje amigable con instrucciones.
 			_show_no_styles_message()
 			return
-		if _picked != style:
+		if picked != style:
 			# Solo `print`, no `logs.append`: el fallback es información, no
 			# error, y los logs activan la ventana StyleError al final.
-			print("Style \"%s\" was not found. Loading \"%s\" instead." % [style, _picked])
-		style = _picked
+			print("Style \"%s\" was not found. Loading \"%s\" instead." % [style, picked])
+		style = picked
 
 	ls_window = ls_scene.instantiate()
 	add_child(ls_window)
@@ -225,17 +225,17 @@ func load_style(_style: Variant = null) -> void:
 		(se_window.get_node(^"TextEdit") as TextEdit).text = "\n".join(PackedStringArray(logs))
 		add_child(se_window)
 
-func style_get_path(_path: String, _style: String = style) -> String:
-	return "res://Styles/%s/%s" % [_style, _path]
+func style_get_path(path: String, style_file_name: String = style) -> String:
+	return "res://Styles/%s/%s" % [style_file_name, path]
 
-func style_get_relative_path(_path: String, _style: String = style) -> String:
-	return "/%s/%s" % [_style, _path]
+func style_get_relative_path(path: String, style_file_name: String = style) -> String:
+	return "/%s/%s" % [style_file_name, path]
 
-func handle_git_output(r: IGitResponse) -> void:
-	if !r.success:
-		var w := preload("res://Subwindows/GitError.tscn").instantiate()
-		add_child(w)
-		(w.get_node(^"TextEdit") as TextEdit).text = "".join(PackedStringArray(r.output))
+func handle_git_output(response: IGitResponse) -> void:
+	if !response.success:
+		var window := preload("res://Subwindows/GitError.tscn").instantiate()
+		add_child(window)
+		(window.get_node(^"TextEdit") as TextEdit).text = "".join(PackedStringArray(response.output))
 
 # ---------------------------------------------------------------------------
 # Helpers de progreso de traducción.
@@ -245,39 +245,39 @@ func handle_git_output(r: IGitResponse) -> void:
 # traducción coincida con el original (nombres propios, "OK", "NO"...).
 # ---------------------------------------------------------------------------
 
-func is_string_translated(_stri: IStringContainer) -> bool:
-	if _stri == null:
+func is_string_translated(string_container: IStringContainer) -> bool:
+	if string_container == null:
 		return false
-	return _stri.last_edited.timestamp != -1
+	return string_container.last_edited.timestamp != -1
 
 # Devuelve [traducidas, total] para una entry concreta.
-func entry_translation_progress(_entry_name: String) -> Array:
-	if not strings.has(_entry_name):
+func entry_translation_progress(entry_name: String) -> Array:
+	if not strings.has(entry_name):
 		return [0, 0]
-	var _arr: Array = strings[_entry_name]
-	var _done: int = 0
-	for _stri: IStringContainer in _arr:
-		if is_string_translated(_stri):
-			_done += 1
-	return [_done, _arr.size()]
+	var array: Array = strings[entry_name]
+	var done: int = 0
+	for string_container: IStringContainer in array:
+		if is_string_translated(string_container):
+			done += 1
+	return [done, array.size()]
 
 # Devuelve [traducidas, total] global.
 func global_translation_progress() -> Array:
-	var _done: int = 0
-	var _total: int = 0
-	for _entry_name: String in strings.keys():
-		var _arr: Array = strings[_entry_name]
-		_total += _arr.size()
-		for _stri: IStringContainer in _arr:
-			if is_string_translated(_stri):
-				_done += 1
-	return [_done, _total]
+	var done: int = 0
+	var total: int = 0
+	for entry_name: String in strings.keys():
+		var array: Array = strings[entry_name]
+		total += array.size()
+		for string_container: IStringContainer in array:
+			if is_string_translated(string_container):
+				done += 1
+	return [done, total]
 
 # Una entry está completamente traducida si todas sus strings lo están y no
 # está vacía (una entry sin strings no se cuenta como "completa", se cuenta
 # como "vacía", para no engañar al ojo del traductor).
-func is_entry_fully_translated(_entry_name: String) -> bool:
-	var _p := entry_translation_progress(_entry_name)
-	if (_p[1] as int) == 0:
+func is_entry_fully_translated(entry_name: String) -> bool:
+	var progress_pair := entry_translation_progress(entry_name)
+	if (progress_pair[1] as int) == 0:
 		return false
-	return (_p[0] as int) == (_p[1] as int)
+	return (progress_pair[0] as int) == (progress_pair[1] as int)

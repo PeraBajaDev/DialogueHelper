@@ -125,13 +125,13 @@ static var _sequence_regex_cache: RegEx = null
 # índice del tag, así que omitir uno no descoloca nada.
 static func _get_strict_regexes() -> Array[RegEx]:
 	if _strict_regexes_cache.is_empty():
-		for _entry: Dictionary in _STRICT_TAGS:
-			var _re := RegEx.new()
+		for entry: Dictionary in _STRICT_TAGS:
+			var re := RegEx.new()
 			# El valor del Dictionary es Variant; casteamos a String para
 			# silenciar UNSAFE_CALL_ARGUMENT (compile() requiere String).
-			var _err: int = _re.compile(str(_entry["pattern"]))
-			if _err == OK:
-				_strict_regexes_cache.append(_re)
+			var err: int = re.compile(str(entry["pattern"]))
+			if err == OK:
+				_strict_regexes_cache.append(re)
 	return _strict_regexes_cache
 
 # Devuelve la RegEx combinada de _extract_tag_sequence ya compilada.
@@ -150,76 +150,76 @@ static func _get_sequence_regex() -> RegEx:
 
 # Quita los caracteres escapados con backtick. "ABC`Xdef" → "ABCdef".
 # El backtick fuera de "`X" se mantiene tal cual (caso raro pero posible).
-static func _strip_backtick_escapes(_s: String) -> String:
-	var _out: String = ""
-	var _i: int = 0
-	while _i < _s.length():
-		var _c: String = _s[_i]
-		if _c == "`" and _i + 1 < _s.length():
+static func _strip_backtick_escapes(value: String) -> String:
+	var result: String = ""
+	var i: int = 0
+	while i < value.length():
+		var character: String = value[i]
+		if character == "`" and i + 1 < value.length():
 			# Saltamos backtick + el carácter siguiente (queda fuera).
-			_i += 2
+			i += 2
 		else:
-			_out += _c
-			_i += 1
-	return _out
+			result += character
+			i += 1
+	return result
 
 # Cuenta tags estrictas en una string. Devuelve dict {tag_repr: count}.
 # tag_repr es la forma "humana" para mostrar al usuario, p.ej. "\E[2]", "%", "/".
-static func _count_tags(_s: String) -> Dictionary:
-	var _clean: String = _strip_backtick_escapes(_s)
-	var _counts: Dictionary = {}
+static func _count_tags(value: String) -> Dictionary:
+	var clean_string: String = _strip_backtick_escapes(value)
+	var counts: Dictionary = {}
 
 	# Símbolos: %% antes que %, así contamos %% una vez y NO dos como %.
-	var _symbol_pos_consumed: Array[int] = []
-	var _work: String = _clean
+	var symbol_pos_consumed: Array[int] = [] # Variable declarada pero no usada
+	var work: String = clean_string
 
 	# Reemplazamos los %% encontrados por marcadores invisibles para que el
 	# segundo paso (contando %) no los cuente otra vez.
-	var _pct_pct_count: int = _work.count("%%")
-	if _pct_pct_count > 0:
-		_counts["%%"] = _pct_pct_count
-		_work = _work.replace("%%", "")
+	var double_percentage_count: int = work.count("%%")
+	if double_percentage_count > 0:
+		counts["%%"] = double_percentage_count
+		work = work.replace("%%", "")
 
-	var _pct_count: int = _work.count("%")
-	if _pct_count > 0:
-		_counts["%"] = _pct_count
+	var percentaje_count: int = work.count("%")
+	if percentaje_count > 0:
+		counts["%"] = percentaje_count
 
-	var _slash_count: int = _clean.count("/")
-	if _slash_count > 0:
-		_counts["/"] = _slash_count
+	var slash_count: int = clean_string.count("/")
+	if slash_count > 0:
+		counts["/"] = slash_count
 
 	# Marcadores inline como ~1, ~2, etc. Se conservan individualmente para
 	# que el validador detecte tanto ausencias como cambios de valor.
-	for _pattern: String in _STRICT_INLINE_PATTERNS:
+	for pattern: String in _STRICT_INLINE_PATTERNS:
 		var _inline_re := RegEx.new()
-		if _inline_re.compile(_pattern) != OK:
+		if _inline_re.compile(pattern) != OK:
 			continue
-		for _m: RegExMatch in _inline_re.search_all(_clean):
+		for _m: RegExMatch in _inline_re.search_all(clean_string):
 			var _full: String = _m.get_string(0)
 			# Dictionary.get() devuelve Variant. Evitamos int(Variant), que el
 			# analizador estricto marca como UNSAFE_CALL_ARGUMENT.
-			if _counts.has(_full):
-				var _current: Variant = _counts[_full]
+			if counts.has(_full):
+				var _current: Variant = counts[_full]
 				if _current is int:
-					_counts[_full] = _current + 1
+					counts[_full] = _current + 1
 				else:
-					_counts[_full] = 1
+					counts[_full] = 1
 			else:
-				_counts[_full] = 1
+				counts[_full] = 1
 
 	# Tags con barra invertida: usamos las regex precompiladas y cacheadas.
-	for _re: RegEx in _get_strict_regexes():
-		var _matches: Array[RegExMatch] = _re.search_all(_clean)
+	for re: RegEx in _get_strict_regexes():
+		var _matches: Array[RegExMatch] = re.search_all(clean_string)
 		for _m: RegExMatch in _matches:
 			var _full: String = _m.get_string(0)
 			# Para color_ut, choice_ut y otros sin parámetro, _full ya es la
 			# representación humana ("\R", "\C"). Para los con parámetro,
 			# _full incluye el parámetro ("\E[2]" → en realidad \E2 según el
 			# formato del juego, pero respetamos el original).
-			if not _counts.has(_full):
-				_counts[_full] = 0
-			_counts[_full] += 1
-	return _counts
+			if not counts.has(_full):
+				counts[_full] = 0
+			counts[_full] += 1
+	return counts
 
 # Extrae todas las tags estrictas en el ORDEN en que aparecen. A diferencia
 # de _count_tags, que devuelve un dict y por construcción pierde el orden,
@@ -231,62 +231,62 @@ static func _count_tags(_s: String) -> Dictionary:
 # RegEx de Godot evalúa las alternativas de izquierda a derecha y matchea
 # la primera, así que el orden de las alternativas en el patrón importa:
 # las más específicas primero (%% antes de %, \C[1-9] antes de \C suelta).
-static func _extract_tag_sequence(_s: String) -> PackedStringArray:
-	var _clean: String = _strip_backtick_escapes(_s)
+static func _extract_tag_sequence(value: String) -> PackedStringArray:
+	var clean_string: String = _strip_backtick_escapes(value)
 	var _result: PackedStringArray = PackedStringArray()
 	# RegEx combinada precompilada (ver _get_sequence_regex). El orden de las
 	# alternativas se documenta allí, junto a su compilación.
-	var _re: RegEx = _get_sequence_regex()
-	for _m: RegExMatch in _re.search_all(_clean):
+	var re: RegEx = _get_sequence_regex()
+	for _m: RegExMatch in re.search_all(clean_string):
 		_result.append(_m.get_string(0))
 	return _result
 
 # Compara original vs translation y devuelve un TagDiff.
-static func validate(_original: String, _translation: String) -> TagDiff:
-	var _diff: TagDiff = TagDiff.new()
-	if _original == "" and _translation == "":
-		return _diff
-	var _orig_counts: Dictionary = _count_tags(_original)
-	var _trans_counts: Dictionary = _count_tags(_translation)
+static func validate(original: String, translation: String) -> TagDiff:
+	var diff: TagDiff = TagDiff.new()
+	if original == "" and translation == "":
+		return diff
+	var original_counts: Dictionary = _count_tags(original)
+	var translation_counts: Dictionary = _count_tags(translation)
 
 	# Bloque 2: indicador para que la UI pueda decidir si vale la pena
 	# mostrar el panel del validador. True si cualquiera de los dos lados
 	# tenía al menos una tag.
-	_diff.has_any_tag = not _orig_counts.is_empty() or not _trans_counts.is_empty()
+	diff.has_any_tag = not original_counts.is_empty() or not translation_counts.is_empty()
 
 	# Tags presentes en el original con su conteo.
-	for _tag: String in _orig_counts.keys():
-		var _o: int = _orig_counts[_tag]
-		var _t: int = _trans_counts.get(_tag, 0)
-		if _t < _o:
-			# Faltan (_o - _t) ocurrencias.
-			var _times: int = _o - _t
-			for _i in range(_times):
-				_diff.missing.append(_tag)
+	for tag: String in original_counts.keys():
+		var original_count: int = original_counts[tag]
+		var translation_count: int = translation_counts.get(tag, 0)
+		if translation_count < original_count:
+			# Faltan (original_count - translation_count) ocurrencias.
+			var times: int = original_count - translation_count
+			for i in range(times):
+				diff.missing.append(tag)
 	# Tags presentes en la traducción que no estaban en el original (o que
 	# están más veces que en el original).
-	for _tag: String in _trans_counts.keys():
-		var _t: int = _trans_counts[_tag]
-		var _o: int = _orig_counts.get(_tag, 0)
-		if _t > _o:
-			var _times: int = _t - _o
-			for _i in range(_times):
-				_diff.extra.append(_tag)
+	for tag: String in translation_counts.keys():
+		var translation_count: int = translation_counts[tag]
+		var original_count: int = original_counts.get(tag, 0)
+		if translation_count > original_count:
+			var times: int = translation_count - original_count
+			for i in range(times):
+				diff.extra.append(tag)
 
 	# Bug fix: detección de cambio de orden. Solo válida cuando los conteos
 	# ya coinciden (sin missing/extra) y hay al menos una tag — si no, el
 	# usuario está aún arreglando el conteo y avisar del orden sería ruido.
-	if _diff.missing.is_empty() and _diff.extra.is_empty() and _diff.has_any_tag:
-		var _orig_seq: PackedStringArray = _extract_tag_sequence(_original)
-		var _trans_seq: PackedStringArray = _extract_tag_sequence(_translation)
-		if _orig_seq != _trans_seq:
-			_diff.order_mismatch = true
+	if diff.missing.is_empty() and diff.extra.is_empty() and diff.has_any_tag:
+		var orig_seq: PackedStringArray = _extract_tag_sequence(original)
+		var trans_seq: PackedStringArray = _extract_tag_sequence(translation)
+		if orig_seq != trans_seq:
+			diff.order_mismatch = true
 
-	_diff.ok = _diff.missing.is_empty() and _diff.extra.is_empty() and not _diff.order_mismatch
-	return _diff
+	diff.ok = diff.missing.is_empty() and diff.extra.is_empty() and not diff.order_mismatch
+	return diff
 
 # Atajo para validar un IStringContainer entero (sólo capa 0 = content).
-static func validate_string(_stri: IStringContainer) -> TagDiff:
-	if _stri == null:
+static func validate_string(string_container: IStringContainer) -> TagDiff:
+	if string_container == null:
 		return TagDiff.new()
-	return validate(_stri.original_content, _stri.content)
+	return validate(string_container.original_content, string_container.content)

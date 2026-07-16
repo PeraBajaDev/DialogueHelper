@@ -4,8 +4,8 @@ class_name IGit
 var url := ""
 var branch := ""
 
-func global_path(_path: String) -> String:
-	return ProjectSettings.globalize_path("user://" + _path)
+func global_path(path: String) -> String:
+	return ProjectSettings.globalize_path("user://" + path)
 
 # Bug fix (inyección de shell):
 # Antes esta función construía un string `git ... && git ...` y lo pasaba a
@@ -19,42 +19,42 @@ func global_path(_path: String) -> String:
 #
 # Para conservar la semántica del antiguo `&&` (ejecutar el siguiente sólo si
 # el anterior tuvo éxito) usamos el helper _run_git_chain.
-func _run_git(_args: Array, _show_console: bool = false) -> IGitResponse:
-	var _out: Array = []
-	var _exit_code: int = OS.execute("git", PackedStringArray(_args), _out, false, _show_console)
-	var _r := IGitResponse.new()
-	_r.output = PackedStringArray(_out)
+func _run_git(args: Array, show_console: bool = false) -> IGitResponse:
+	var out: Array = []
+	var exit_code: int = OS.execute("git", PackedStringArray(args), out, false, show_console)
+	var git_response := IGitResponse.new()
+	git_response.output = PackedStringArray(out)
 	print("Output:")
-	for _line: String in _out:
-		print(_line)
+	for line: String in out:
+		print(line)
 	print("=======")
 	# Mantenemos el mismo criterio de éxito que la versión anterior: el comando
 	# se considera fallido si exit != 0 o si alguna línea empieza por error/fatal.
-	if _exit_code != 0:
-		_r.success = false
+	if exit_code != 0:
+		git_response.success = false
 	else:
-		for _line: String in _out:
-			if _line.begins_with("error:") or _line.begins_with("fatal:"):
-				_r.success = false
+		for line: String in out:
+			if line.begins_with("error:") or line.begins_with("fatal:"):
+				git_response.success = false
 				break
-	return _r
+	return git_response
 
 # Ejecuta una lista de invocaciones a git en orden. Si una falla, aborta y
 # devuelve el resultado fallido (con la salida acumulada hasta ese punto).
-func _run_git_chain(_chain: Array, _show_console: bool = false) -> IGitResponse:
-	var _accum_output: Array = []
-	var _last: IGitResponse = null
-	for _args: Array in _chain:
-		_last = _run_git(_args, _show_console)
-		for _l: String in _last.output:
-			_accum_output.append(_l)
-		if not _last.success:
-			_last.output = PackedStringArray(_accum_output)
-			return _last
-	if _last == null:
-		_last = IGitResponse.new()
-	_last.output = PackedStringArray(_accum_output)
-	return _last
+func _run_git_chain(chain: Array, show_console: bool = false) -> IGitResponse:
+	var accumulated_output: Array = []
+	var last_response: IGitResponse = null
+	for args: Array in chain:
+		last_response = _run_git(args, show_console)
+		for _l: String in last_response.output:
+			accumulated_output.append(_l)
+		if not last_response.success:
+			last_response.output = PackedStringArray(accumulated_output)
+			return last_response
+	if last_response == null:
+		last_response = IGitResponse.new()
+	last_response.output = PackedStringArray(accumulated_output)
+	return last_response
 
 func clone() -> IGitResponse:
 	return _run_git([
@@ -73,12 +73,12 @@ func pull() -> IGitResponse:
 		["-C", global_path("repo/"), "pull", "-f"],
 	])
 
-func commit(_message: String) -> IGitResponse:
+func commit(message: String) -> IGitResponse:
 	return _run_git_chain([
 		["-C", global_path("repo/"), "add", "."],
 		# `-m` con un solo argumento posterior: git lo trata como mensaje literal
 		# y no lo pasa por ningún shell. Comillas/backticks/saltos quedan inertes.
-		["-C", global_path("repo/"), "commit", "-m", _message],
+		["-C", global_path("repo/"), "commit", "-m", message],
 		["-C", global_path("repo/"), "push", "origin", branch],
 	])
 

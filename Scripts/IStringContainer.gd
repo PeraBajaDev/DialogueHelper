@@ -23,22 +23,22 @@ var equal_strings: Array[int] = []
 var equal_strings_index := -1
 
 func _init(json: IFormatEntry = null) -> void:
-	var _json := json.data if json != null else {}
-	if _json.has(&"ID"):
-		id = _json.ID as int
+	var json_data := json.data if json != null else {}
+	if json_data.has(&"ID"):
+		id = json_data.ID as int
 
 	# Asignación de OriginalContent y Content, evitando sobrescribir Content con vacío
-	if _json.has(&"OriginalContent"):
-		original_content = str(_json.OriginalContent)
+	if json_data.has(&"OriginalContent"):
+		original_content = str(json_data.OriginalContent)
 		content = original_content  # fallback si Content no existe
-	if _json.has(&"Content") and str(_json.Content) != "":
-		content = str(_json.Content)
+	if json_data.has(&"Content") and str(json_data.Content) != "":
+		content = str(json_data.Content)
 
-	if _json.has(&"LastEdited"):
-		last_edited = ILastEdited.new(_json.LastEdited)
+	if json_data.has(&"LastEdited"):
+		last_edited = ILastEdited.new(json_data.LastEdited)
 
-	if _json.has(&"LayerStrings"):
-		var _ls := str(_json.LayerStrings).split(&",")
+	if json_data.has(&"LayerStrings"):
+		var _ls := str(json_data.LayerStrings).split(&",")
 		var _sls := [content]
 		for _e in _ls:
 			_sls.append(_e.uri_decode())
@@ -49,8 +49,8 @@ func _init(json: IFormatEntry = null) -> void:
 	while layer_strings.size() < Handle.layers:
 		layer_strings.append(&"")
 
-	if _json.has(&"LayerColors"):
-		var _lc := str(_json.LayerColors).split(&",")
+	if json_data.has(&"LayerColors"):
+		var _lc := str(json_data.LayerColors).split(&",")
 		var _clc := []
 		for _e in _lc:
 			_clc.append(Color.hex(_e.hex_to_int()))
@@ -61,40 +61,40 @@ func _init(json: IFormatEntry = null) -> void:
 	while layer_colors.size() < Handle.layers:
 		layer_colors.append(Color.WHITE)
 
-	if _json.has(&"BoxStyle"):
-		box_style = _json.BoxStyle as int
-	if _json.has(&"FontStyle"):
-		font_style = _json.FontStyle as int
-	if _json.has(&"EnablePortrait"):
-		enable_portrait = _json.EnablePortrait as bool
-	if _json.has(&"Clave"):
-		clave = str(_json.Clave)
-	if _json.has(&"Speaker"):
-		speaker = str(_json.Speaker)
-	if _json.has(&"NeedsReview"):
+	if json_data.has(&"BoxStyle"):
+		box_style = json_data.BoxStyle as int
+	if json_data.has(&"FontStyle"):
+		font_style = json_data.FontStyle as int
+	if json_data.has(&"EnablePortrait"):
+		enable_portrait = json_data.EnablePortrait as bool
+	if json_data.has(&"Clave"):
+		clave = str(json_data.Clave)
+	if json_data.has(&"Speaker"):
+		speaker = str(json_data.Speaker)
+	if json_data.has(&"NeedsReview"):
 		# Bloque 2: el campo aparece sólo cuando está activado. Su mera
 		# presencia ya implica true; el valor (vacío en archivos nuevos,
 		# "true" en archivos guardados con versiones intermedias) sólo se
 		# mira para detectar un explícito "false" que podría dejar alguien
 		# editando a mano.
-		var _nr_raw := str(_json.NeedsReview).to_lower().strip_edges()
-		needs_review = _nr_raw != "false" and _nr_raw != "0"
+		var nr_raw := str(json_data.NeedsReview).to_lower().strip_edges()
+		needs_review = nr_raw != "false" and nr_raw != "0"
 
-	#if _json.has(&"EqualStringsIndex"):
-	#	equal_strings_index = _json.EqualStringsIndex as int
+	#if json_data.has(&"EqualStringsIndex"):
+	#	equal_strings_index = json_data.EqualStringsIndex as int
 
 func _to_string() -> String:
-	var _entry := IFormatEntry.new()
-	_entry.disable_uri = [&"LayerStrings", &"LayerColors", &"LastEdited"]
-	_entry.kind = 1
+	var entry := IFormatEntry.new()
+	entry.disable_uri = [&"LayerStrings", &"LayerColors", &"LastEdited"]
+	entry.kind = 1
 
 	# Solo sobrescribir Content si difiere de OriginalContent
 	if content != original_content:
-		_entry.data.Content = content
-	_entry.data.OriginalContent = original_content
+		entry.data.Content = content
+	entry.data.OriginalContent = original_content
 
 	if last_edited.author != "" and last_edited.timestamp != -1:
-		_entry.data.LastEdited = str(last_edited)
+		entry.data.LastEdited = str(last_edited)
 
 	if !&"".join(PackedStringArray(layer_strings.slice(1))).is_empty():
 		var _ls: Array[String] = layer_strings.slice(1)
@@ -102,7 +102,7 @@ func _to_string() -> String:
 		for _i in range(_ls.size()):
 			if !_ls[_i].is_empty():
 				_last = _i + 1
-		_entry.data.LayerStrings = &",".join(PackedStringArray(_ls.slice(0, _last)))
+		entry.data.LayerStrings = &",".join(PackedStringArray(_ls.slice(0, _last)))
 
 	var _lc := []
 	var _lastc := 0
@@ -112,24 +112,24 @@ func _to_string() -> String:
 		_lc.append(String.num_uint64(layer_colors[_i].to_rgba32(), 16))
 
 	if !&"".join(PackedStringArray(_lc)).replace(&"f", &"").is_empty():
-		_entry.data.LayerColors = &",".join(PackedStringArray(_lc.slice(0, _lastc)))
+		entry.data.LayerColors = &",".join(PackedStringArray(_lc.slice(0, _lastc)))
 
 	if box_style != 0:
-		_entry.data.BoxStyle = box_style
+		entry.data.BoxStyle = box_style
 	if font_style != 0:
-		_entry.data.FontStyle = font_style
+		entry.data.FontStyle = font_style
 	if enable_portrait:
-		_entry.data.EnablePortrait = enable_portrait
+		entry.data.EnablePortrait = enable_portrait
 	#if equal_strings_index != -1:
-	#	_entry.data.EqualStringsIndex = equal_strings_index
+	#	entry.data.EqualStringsIndex = equal_strings_index
 
 	# Guardar Clave al final si existe
 	if clave != "":
-		_entry.data.Clave = clave
-		
-		
+		entry.data.Clave = clave
+
+
 	if speaker != "":
-		_entry.data.Speaker = speaker
+		entry.data.Speaker = speaker
 
 	# Bloque 2: el campo NeedsReview sólo aparece en el archivo cuando está
 	# activado. Lo escribimos con valor explícito (`NeedsReview:true`) en vez
@@ -137,9 +137,9 @@ func _to_string() -> String:
 	# si era el último de la línea, así que al reabrir el .txt se perdía la
 	# marca. El loader sigue aceptando el formato vacío por compatibilidad.
 	if needs_review:
-		_entry.data.NeedsReview = "true"
-		
-	return str(_entry)
+		entry.data.NeedsReview = "true"
+
+	return str(entry)
 
 func update() -> void:
 	if layer_strings.is_empty():

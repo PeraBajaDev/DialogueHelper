@@ -37,25 +37,25 @@ var ascender := 0
 var ascender_offset := 0
 var scale := 1.0
 
-func _init(_json: Variant = null) -> void:
-	if _json is Dictionary:
-		var _jd: Dictionary = _json
-		if _jd.has(&"Name"):
-			name = str(_jd.Name)
-		if _jd.has(&"Texture"):
-			var path := str(Handle.style_get_path("Fonts/%s" % _jd.Texture))
+func _init(json: Variant = null) -> void:
+	if json is Dictionary:
+		var json_data: Dictionary = json
+		if json_data.has(&"Name"):
+			name = str(json_data.Name)
+		if json_data.has(&"Texture"):
+			var path := str(Handle.style_get_path("Fonts/%s" % json_data.Texture))
 			if FileAccess.file_exists(path):
 				texture = load(path) if OS.has_feature("editor") else ImageTexture.create_from_image(Image.load_from_file(path))
-		if _jd.has(&"Size"):
-			size = _jd.Size as int
-		if _jd.has(&"Scale"):
-			scale = _jd.Scale as float
-		if _jd.has(&"Ascender"):
-			ascender = _jd.Ascender as int
-		if _jd.has(&"AscenderOffset"):
-			ascender_offset = _jd.AscenderOffset as int
-		if _jd.has(&"Glyphs"):
-			for glyph: Dictionary in _jd.Glyphs:
+		if json_data.has(&"Size"):
+			size = json_data.Size as int
+		if json_data.has(&"Scale"):
+			scale = json_data.Scale as float
+		if json_data.has(&"Ascender"):
+			ascender = json_data.Ascender as int
+		if json_data.has(&"AscenderOffset"):
+			ascender_offset = json_data.AscenderOffset as int
+		if json_data.has(&"Glyphs"):
+			for glyph: Dictionary in json_data.Glyphs:
 				if glyph.has(&"Char"):
 					glyphs[str(glyph.Char)] = IGlyph.new(glyph)
 		_register_escape_aliases()
@@ -72,12 +72,12 @@ func _init(_json: Variant = null) -> void:
 # exactamente igual que el char real en cualquier lookup (incluida la medición
 # del wrap), mientras que el dibujo sigue usando char.char ya rehidratado.
 func _register_escape_aliases() -> void:
-	for _orig: String in ESCAPE_PLACEHOLDERS:
-		var _placeholder: String = ESCAPE_PLACEHOLDERS[_orig]
-		if glyphs.has(_orig):
-			glyphs[_placeholder] = glyphs[_orig]
+	for origin: String in ESCAPE_PLACEHOLDERS:
+		var placeholder: String = ESCAPE_PLACEHOLDERS[origin]
+		if glyphs.has(origin):
+			glyphs[placeholder] = glyphs[origin]
 
-static func get_font(_index: int) -> IFont:
-	if _index >= Handle.font_data.size() || _index < 0:
+static func get_font(index: int) -> IFont:
+	if index >= Handle.font_data.size() || index < 0:
 		return null
-	return Handle.font_data[_index]
+	return Handle.font_data[index]
