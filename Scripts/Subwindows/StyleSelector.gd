@@ -17,48 +17,48 @@ func _ready() -> void:
 	# (p. ej. "Deltarune Chapter 1") lo mostramos; si no, mostramos el nombre
 	# de la carpeta tal cual. El id que registramos en el OptionButton es
 	# secuencial; lo que nos importa es la carpeta, que recuperamos del map.
-	var _available := Handle.list_available_styles()
-	var _i: int = 0
-	var _preselect: int = 0
+	var available := Handle.list_available_styles()
+	var i: int = 0
+	var preselect: int = 0
 	# Preseleccionamos el Style actualmente cargado, que viene de
 	# Handle.pick_default_style() (Deltarune si está, si no Template, etc.).
-	var _current := Handle.style
-	for _folder: String in _available:
-		var _display_name: String = _folder
-		var _meta_path := Handle.style_get_path("Metadata.json", _folder)
-		if FileAccess.file_exists(_meta_path):
-			var _meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(_meta_path))
-			if _meta is Dictionary and (_meta as Dictionary).has(&"Name"):
-				_display_name = str((_meta as Dictionary).Name)
-		option_button.add_item(_display_name, _i)
-		_id_to_folder[_i] = _folder
-		if _folder == _current:
-			_preselect = _i
-		_i += 1
-	option_button.select(_preselect)
+	var current := Handle.style
+	for _folder: String in available:
+		var display_local_name: String = _folder
+		var meta_path := Handle.style_get_path("Metadata.json", _folder)
+		if FileAccess.file_exists(meta_path):
+			var meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(meta_path))
+			if meta is Dictionary and (meta as Dictionary).has(&"Name"):
+				display_local_name = str((meta as Dictionary).Name)
+		option_button.add_item(display_local_name, i)
+		_id_to_folder[i] = _folder
+		if _folder == current:
+			preselect = i
+		i += 1
+	option_button.select(preselect)
 
 func _on_ok_button_pressed() -> void:
-	var _id: int = option_button.get_selected_id()
-	if _id < 0 or not _id_to_folder.has(_id):
+	var id: int = option_button.get_selected_id()
+	if id < 0 or not _id_to_folder.has(id):
 		queue_free()
 		return
-	var _folder: String = _id_to_folder[_id]
+	var folder: String = _id_to_folder[id]
 
 	# Si el usuario eligió un Style distinto del cargado por defecto,
 	# recargamos. Mismo flujo que usa Settings al cambiar de Style.
-	if _folder != Handle.style:
-		Handle.load_style(_folder)
+	if folder != Handle.style:
+		Handle.load_style(folder)
 		if Handle.main_node != null and Handle.main_node.box != null \
 				and Handle.main_node.box.handle != null:
 			Handle.main_node.box.handle.force_update = true
 
 	# Persistimos la elección. La próxima vez que arranque la app, el bloque
 	# de "primer arranque" no se ejecutará y se respetará esta preferencia.
-	var _f := FileAccess.open("user://last_style.txt", FileAccess.WRITE)
-	if _f != null:
-		_f.store_string(_folder)
-		_f.flush()
-		_f.close()
+	var f := FileAccess.open("user://last_style.txt", FileAccess.WRITE)
+	if f != null:
+		f.store_string(folder)
+		f.flush()
+		f.close()
 	queue_free()
 
 func _on_cancel_button_pressed() -> void:

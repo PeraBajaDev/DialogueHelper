@@ -17,10 +17,10 @@ func _ready() -> void:
 	entry_conflict.max_value = conflicts.size()
 	change_current_entry(entry + 1)
 
-func change_current_entry(_entry: int) -> void:
-	_entry -= 1
-	if _entry >= 0 && _entry < conflicts.size():
-		entry = _entry
+func change_current_entry(local_entry: int) -> void:
+	local_entry -= 1
+	if local_entry >= 0 && local_entry < conflicts.size():
+		entry = local_entry
 		var entry_data := conflicts[entry]
 		current_string.text = entry_data.current_string
 		git_string.text = entry_data.git_string
@@ -50,8 +50,8 @@ func _on_close_requested() -> void:
 func resolved_merge_conflicts() -> void:
 	queue_free()
 
-func _on_spin_box_value_changed(_value: int) -> void:
-	change_current_entry(_value)
+func _on_spin_box_value_changed(value: int) -> void:
+	change_current_entry(value)
 
 func _on_button_git_pressed() -> void:
 	conflicts[entry].keep = IGitConflict.IKeep.KeepGit

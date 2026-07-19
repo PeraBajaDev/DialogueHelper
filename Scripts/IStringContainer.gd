@@ -38,24 +38,24 @@ func _init(json: IFormatEntry = null) -> void:
 		last_edited = ILastEdited.new(json_data.LastEdited)
 
 	if json_data.has(&"LayerStrings"):
-		var _ls := str(json_data.LayerStrings).split(&",")
-		var _sls := [content]
-		for _e in _ls:
-			_sls.append(_e.uri_decode())
+		var ls := str(json_data.LayerStrings).split(&",")
+		var sls := [content]
+		for _e in ls:
+			sls.append(_e.uri_decode())
 		layer_strings.clear()
-		layer_strings.assign(_sls)
+		layer_strings.assign(sls)
 	else:
 		layer_strings = [content]
 	while layer_strings.size() < Handle.layers:
 		layer_strings.append(&"")
 
 	if json_data.has(&"LayerColors"):
-		var _lc := str(json_data.LayerColors).split(&",")
-		var _clc := []
-		for _e in _lc:
-			_clc.append(Color.hex(_e.hex_to_int()))
+		var lc := str(json_data.LayerColors).split(&",")
+		var clc := []
+		for _e in lc:
+			clc.append(Color.hex(_e.hex_to_int()))
 		layer_colors.clear()
-		layer_colors.assign(_clc)
+		layer_colors.assign(clc)
 	else:
 		layer_colors = []
 	while layer_colors.size() < Handle.layers:
@@ -97,22 +97,22 @@ func _to_string() -> String:
 		entry.data.LastEdited = str(last_edited)
 
 	if !&"".join(PackedStringArray(layer_strings.slice(1))).is_empty():
-		var _ls: Array[String] = layer_strings.slice(1)
-		var _last := 0
-		for _i in range(_ls.size()):
-			if !_ls[_i].is_empty():
-				_last = _i + 1
-		entry.data.LayerStrings = &",".join(PackedStringArray(_ls.slice(0, _last)))
+		var ls: Array[String] = layer_strings.slice(1)
+		var last := 0
+		for _i in range(ls.size()):
+			if !ls[_i].is_empty():
+				last = _i + 1
+		entry.data.LayerStrings = &",".join(PackedStringArray(ls.slice(0, last)))
 
-	var _lc := []
-	var _lastc := 0
+	var lc := []
+	var lastc := 0
 	for _i in range(layer_colors.size()):
 		if layer_colors[_i] != Color.WHITE:
-			_lastc = _i + 1
-		_lc.append(String.num_uint64(layer_colors[_i].to_rgba32(), 16))
+			lastc = _i + 1
+		lc.append(String.num_uint64(layer_colors[_i].to_rgba32(), 16))
 
-	if !&"".join(PackedStringArray(_lc)).replace(&"f", &"").is_empty():
-		entry.data.LayerColors = &",".join(PackedStringArray(_lc.slice(0, _lastc)))
+	if !&"".join(PackedStringArray(lc)).replace(&"f", &"").is_empty():
+		entry.data.LayerColors = &",".join(PackedStringArray(lc.slice(0, lastc)))
 
 	if box_style != 0:
 		entry.data.BoxStyle = box_style

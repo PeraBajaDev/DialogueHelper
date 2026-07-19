@@ -6,11 +6,11 @@ var entry := ""
 var index := -1
 var data: IStringContainer = null
 
-func _init(_name := "", _entry := "", _index := -1, _data: IStringContainer = null) -> void:
-	name = _name
-	entry = _entry
-	index = _index
-	data = _data
+func _init(local_name := "", local_entry := "", local_index := -1, local_data: IStringContainer = null) -> void:
+	name = local_name
+	entry = local_entry
+	index = local_index
+	data = local_data
 
 func to_json() -> Dictionary:
 	return {

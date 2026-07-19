@@ -29,12 +29,12 @@ func _process(_delta: float) -> void:
 
 	# Sólo recalculamos cuando cambia el box seleccionado o cuando se recargan
 	# los datos del estilo (la cantidad de boxes cambia).
-	var _box_data_size: int = Handle.box_data.size()
-	if current_box == _last_applied_box and _box_data_size == _last_applied_box_data_size:
+	var box_data_size: int = Handle.box_data.size()
+	if current_box == _last_applied_box and box_data_size == _last_applied_box_data_size:
 		return
 
 	_last_applied_box = current_box
-	_last_applied_box_data_size = _box_data_size
+	_last_applied_box_data_size = box_data_size
 
 	var box: IBox = Handle.box_data[current_box]
 	if spr.texture != box.texture:
@@ -42,6 +42,6 @@ func _process(_delta: float) -> void:
 	supports_portrait = box.supports_portrait
 	dialogue_offset = box.dialogue_offset
 	portrait_offset = box.portrait_offset
-	var _scale := Vector2(box.scale, box.scale)
-	if _scale != scale:
-		scale = _scale
+	var local_scale := Vector2(box.scale, box.scale)
+	if local_scale != scale:
+		scale = local_scale

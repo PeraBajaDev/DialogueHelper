@@ -12,9 +12,9 @@ func _init(json: Variant = null, local_timestamp: Variant = null, author_name: V
 		if json_data.has(&"Author"):
 			author = str(json_data.Author)
 	elif json is String:
-		var _data := str(json).split(&",")
-		author = _data[0].uri_decode()
-		timestamp = int(_data[1])
+		var data := str(json).split(&",")
+		author = data[0].uri_decode()
+		timestamp = int(data[1])
 	elif local_timestamp is int && author_name is String:
 		timestamp = local_timestamp
 		author = author_name

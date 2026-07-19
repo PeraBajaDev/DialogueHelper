@@ -27,19 +27,19 @@ func _ready() -> void:
 	# seleccionando la opción equivocada o causaba "Index out of bounds".
 	# Ahora resolvemos ID → índice y caemos a "String" si el ID guardado
 	# ya no existe en esta versión.
-	var _saved_id: int = (get_parent() as WDialogueHelper).search_kind
-	var _idx: int = search_type.get_item_index(_saved_id)
-	if _idx == -1:
+	var saved_id: int = (get_parent() as WDialogueHelper).search_kind
+	var idx: int = search_type.get_item_index(saved_id)
+	if idx == -1:
 		# Fallback: buscar el item con id 1 (String); si no existe, el
 		# primero. Esto cubre tanto archivos antiguos (kind=0 era "Entry")
 		# como cualquier valor inválido.
-		var _string_idx: int = search_type.get_item_index(1)
-		if _string_idx != -1:
-			search_type.select(_string_idx)
+		var string_idx: int = search_type.get_item_index(1)
+		if string_idx != -1:
+			search_type.select(string_idx)
 		elif search_type.item_count > 0:
 			search_type.select(0)
 	else:
-		search_type.select(_idx)
+		search_type.select(idx)
 
 func _process(_delta: float) -> void:
 	if last_thread is Thread:
@@ -75,18 +75,18 @@ func _on_search_button_pressed() -> void:
 		last_thread.wait_to_finish()
 		last_thread = null
 		_cancelled = false
-	var _do_casing := case_sensitive.button_pressed
-	var _search := search_for.text
+	var do_casing := case_sensitive.button_pressed
+	var search := search_for.text
 	# Modo de búsqueda: "String" busca en el contenido de la traducción,
 	# "Clave" busca en el campo Clave. La opción "Entry" del search por
 	# nombre de entry se eliminó: para eso ya está la barra "Search..."
 	# del panel principal que filtra en vivo el dialogue_selector.
-	var _kind_id: int = search_type.get_selected_id()
-	var _kind: String = search_type.get_item_text(search_type.get_item_index(_kind_id))
-	if !_do_casing:
-		_search = _search.to_lower()
-	(get_parent() as WDialogueHelper).search_kind = _kind_id
-	var _data: Dictionary = Handle.strings
+	var kind_id: int = search_type.get_selected_id()
+	var kind: String = search_type.get_item_text(search_type.get_item_index(kind_id))
+	if !do_casing:
+		search = search.to_lower()
+	(get_parent() as WDialogueHelper).search_kind = kind_id
+	var data: Dictionary = Handle.strings
 	searching_window = searching_scene.instantiate()
 	add_child(searching_window)
 	searching_window.progress_bar.set_max(Handle.string_size)
@@ -94,34 +94,34 @@ func _on_search_button_pressed() -> void:
 	search_results_window = search_results_scene.instantiate()
 	get_parent().add_child(search_results_window)
 	search_results_window.title = "Search results for: " + str(search_for.text)
-	var _il: ItemList = search_results_window.get_node("ItemList")
+	var il: ItemList = search_results_window.get_node("ItemList")
 	# Capturamos una referencia local al ItemList y a la ventana de progreso
 	# para checkear validez antes de tocarlos desde el worker.
-	var _sw := searching_window
+	var sw := searching_window
 	last_thread.start(func() -> void:
-		var _v := 0
-		for _entry_name: String in _data.keys():
+		var v := 0
+		for _entry_local_name: String in data.keys():
 			if _cancelled:
 				return
-			var _index := 0
-			for _strg: IStringContainer in _data[_entry_name]:
+			var index := 0
+			for _strg: IStringContainer in data[_entry_local_name]:
 				if _cancelled:
 					return
-				var _haystack: String
-				match _kind:
+				var haystack: String
+				match kind:
 					"Clave":
-						_haystack = str(_strg.clave)
+						haystack = str(_strg.clave)
 					_:
-						_haystack = str(_strg.content)
-				if !_do_casing:
-					_haystack = _haystack.to_lower()
-				if _haystack.contains(_search):
-					if is_instance_valid(_il):
-						_il.call_deferred("add_item", _entry_name + ":" + str(_index + 1))
-				_v += 1
-				_index += 1
-				if is_instance_valid(_sw) and is_instance_valid(_sw.progress_bar):
-					_sw.progress_bar.call_deferred("set_value", _v)
+						haystack = str(_strg.content)
+				if !do_casing:
+					haystack = haystack.to_lower()
+				if haystack.contains(search):
+					if is_instance_valid(il):
+						il.call_deferred("add_item", _entry_local_name + ":" + str(index + 1))
+				v += 1
+				index += 1
+				if is_instance_valid(sw) and is_instance_valid(sw.progress_bar):
+					sw.progress_bar.call_deferred("set_value", v)
 		# Al terminar, ocultamos la ventana de búsqueda y damos foco a los
 		# resultados. Sólo si seguimos vivos y no se canceló.
 		if not _cancelled and is_instance_valid(self):

@@ -64,10 +64,10 @@ func _ready() -> void:
 # Devuelve la "base" de la clave (lo que va después del prefijo sp_/spN_/sp_N_).
 # Si la clave no tiene prefijo sp_*, la devuelve sin tocar.
 func _strip_sp_prefix(clave: String) -> String:
-	var _m: RegExMatch = _sp_rx.search(clave)
-	if _m == null:
+	var m: RegExMatch = _sp_rx.search(clave)
+	if m == null:
 		return clave
-	return clave.substr(_m.get_end())
+	return clave.substr(m.get_end())
 
 # True si la clave empieza con un prefijo sp_ reconocido (formato nuevo o legacy).
 func _is_sp_clave(clave: String) -> bool:
@@ -82,24 +82,24 @@ func _is_sp_clave(clave: String) -> bool:
 # encontrar una libre. El cálculo refleja exactamente lo que hará luego
 # _on_ok_button_pressed para que preview y resultado coincidan.
 func _preview_clave(source_clave: String, target_entry: String) -> String:
-	var _base: String = _strip_sp_prefix(source_clave)
-	if _base == "":
+	var base: String = _strip_sp_prefix(source_clave)
+	if base == "":
 		return "sp_"
 	if not Handle.strings.has(target_entry):
-		return "sp_" + _base
-	var _arr: Array = Handle.strings[target_entry] as Array
-	var _existing_claves := {}
-	for _s: IStringContainer in _arr:
-		_existing_claves[_s.clave] = true
-	var _counter: int = 0
-	for _s: IStringContainer in _arr:
-		if _is_sp_clave(_s.clave) and _strip_sp_prefix(_s.clave) == _base:
-			_counter += 1
-	var _candidate := ("sp_" + _base) if _counter == 0 else ("sp_" + str(_counter) + "_" + _base)
-	while _existing_claves.has(_candidate):
-		_counter += 1
-		_candidate = "sp_" + str(_counter) + "_" + _base
-	return _candidate
+		return "sp_" + base
+	var arr: Array = Handle.strings[target_entry] as Array
+	var existing_claves := {}
+	for _s: IStringContainer in arr:
+		existing_claves[_s.clave] = true
+	var counter: int = 0
+	for _s: IStringContainer in arr:
+		if _is_sp_clave(_s.clave) and _strip_sp_prefix(_s.clave) == base:
+			counter += 1
+	var candidate := ("sp_" + base) if counter == 0 else ("sp_" + str(counter) + "_" + base)
+	while existing_claves.has(candidate):
+		counter += 1
+		candidate = "sp_" + str(counter) + "_" + base
+	return candidate
 
 # ---------------------------------------------------------------------------
 # Handlers de UI
@@ -127,27 +127,27 @@ func _on_cancel_button_pressed() -> void:
 	queue_free()
 
 func _on_ok_button_pressed() -> void:
-	var _entries_arr: Array = Handle.strings[entry]
-	var _insert_at: int
+	var entries_arr: Array = Handle.strings[entry]
+	var insert_at: int
 
 	if source_container != null and source_index >= 0:
 		# Modo DUPLICAR: insertar al final de la familia sp_*_<base>.
-		var _base := _strip_sp_prefix(source_container.clave)
-		_insert_at = source_index + 1
-		for _i in range(source_index + 1, _entries_arr.size()):
-			var _s: IStringContainer = _entries_arr[_i]
-			if _is_sp_clave(_s.clave) and _strip_sp_prefix(_s.clave) == _base:
-				_insert_at = _i + 1
-	elif source_index >= 0 and source_index < _entries_arr.size():
-		_insert_at = source_index + 1
+		var base := _strip_sp_prefix(source_container.clave)
+		insert_at = source_index + 1
+		for _i in range(source_index + 1, entries_arr.size()):
+			var s: IStringContainer = entries_arr[_i]
+			if _is_sp_clave(s.clave) and _strip_sp_prefix(s.clave) == base:
+				insert_at = _i + 1
+	elif source_index >= 0 and source_index < entries_arr.size():
+		insert_at = source_index + 1
 	else:
-		_insert_at = _entries_arr.size()
+		insert_at = entries_arr.size()
 
-	var _sc := IStringContainer.new()
-	_sc.id = Handle.last_string_id
+	var sc := IStringContainer.new()
+	sc.id = Handle.last_string_id
 	Handle.last_string_id += 1
-	_sc.original_content = content_edit.text
-	_sc.content = _sc.original_content
+	sc.original_content = content_edit.text
+	sc.content = sc.original_content
 
 	# Asignar clave contando los miembros de la familia presentes en TODA la
 	# entry (no sólo los anteriores al punto de inserción). Bug fix: el código
@@ -159,81 +159,81 @@ func _on_ok_button_pressed() -> void:
 	# Defensa adicional: si por cualquier motivo la clave generada ya existe en
 	# la entry, incrementamos el contador hasta encontrar una libre.
 	if source_container != null and not edit_clave_check.button_pressed:
-		var _base := _strip_sp_prefix(source_container.clave)
-		var _existing_claves := {}
-		for _s: IStringContainer in _entries_arr:
-			_existing_claves[_s.clave] = true
-		var _counter := 0
-		for _s: IStringContainer in _entries_arr:
-			if _is_sp_clave(_s.clave) and _strip_sp_prefix(_s.clave) == _base:
-				_counter += 1
-		var _candidate := ("sp_" + _base) if _counter == 0 else ("sp_" + str(_counter) + "_" + _base)
-		while _existing_claves.has(_candidate):
-			_counter += 1
-			_candidate = "sp_" + str(_counter) + "_" + _base
-		_sc.clave = _candidate
+		var base := _strip_sp_prefix(source_container.clave)
+		var existing_claves := {}
+		for s: IStringContainer in entries_arr:
+			existing_claves[s.clave] = true
+		var counter := 0
+		for s: IStringContainer in entries_arr:
+			if _is_sp_clave(s.clave) and _strip_sp_prefix(s.clave) == base:
+				counter += 1
+		var candidate := ("sp_" + base) if counter == 0 else ("sp_" + str(counter) + "_" + base)
+		while existing_claves.has(candidate):
+			counter += 1
+			candidate = "sp_" + str(counter) + "_" + base
+		sc.clave = candidate
 	else:
-		_sc.clave = clave_edit.text
+		sc.clave = clave_edit.text
 
 	if source_container != null:
-		_sc.font_style = source_container.font_style
-		_sc.box_style = source_container.box_style
-		_sc.speaker = source_container.speaker
-		_sc.enable_portrait = source_container.enable_portrait
-	_sc.layer_strings = [_sc.content]
-	while _sc.layer_strings.size() < Handle.layers:
-		_sc.layer_strings.append("")
-	_sc.layer_colors = []
-	while _sc.layer_colors.size() < Handle.layers:
-		_sc.layer_colors.append(Color.WHITE)
-	_sc.equal_strings = []
+		sc.font_style = source_container.font_style
+		sc.box_style = source_container.box_style
+		sc.speaker = source_container.speaker
+		sc.enable_portrait = source_container.enable_portrait
+	sc.layer_strings = [sc.content]
+	while sc.layer_strings.size() < Handle.layers:
+		sc.layer_strings.append("")
+	sc.layer_colors = []
+	while sc.layer_colors.size() < Handle.layers:
+		sc.layer_colors.append(Color.WHITE)
+	sc.equal_strings = []
 
-	_entries_arr.insert(_insert_at, _sc)
+	entries_arr.insert(insert_at, sc)
 
-	Handle.string_table[_sc.id] = IStringTable.new(entry, _sc.content, _insert_at, _sc)
-	Handle.string_ids[_sc.id] = _sc.content
+	Handle.string_table[sc.id] = IStringTable.new(entry, sc.content, insert_at, sc)
+	Handle.string_ids[sc.id] = sc.content
 
-	for _i in range(_insert_at + 1, _entries_arr.size()):
-		var _c: IStringContainer = _entries_arr[_i]
-		if Handle.string_table.has(_c.id):
-			(Handle.string_table[_c.id] as IStringTable).index = _i
+	for _i in range(insert_at + 1, entries_arr.size()):
+		var c: IStringContainer = entries_arr[_i]
+		if Handle.string_table.has(c.id):
+			(Handle.string_table[c.id] as IStringTable).index = _i
 
-	if Handle.string_sstr.has(_sc.original_content):
-		_sc.equal_strings_index = Handle.string_sstr[_sc.original_content]
-		_sc.equal_strings = Handle.string_sstr_arr[_sc.equal_strings_index]
-		_sc.equal_strings.append(_sc.id)
+	if Handle.string_sstr.has(sc.original_content):
+		sc.equal_strings_index = Handle.string_sstr[sc.original_content]
+		sc.equal_strings = Handle.string_sstr_arr[sc.equal_strings_index]
+		sc.equal_strings.append(sc.id)
 	else:
-		var _eqstr: Array[int] = []
+		var eqstr: Array[int] = []
 		for _key: int in Handle.string_ids.keys():
-			if Handle.string_ids[_key] == _sc.original_content:
-				_eqstr.append(_key)
-		if _eqstr.size() > 1:
-			var _index_eq := Handle.string_sstr_arr.size()
-			Handle.string_sstr[_sc.original_content] = _index_eq
-			Handle.string_sstr_arr.append(_eqstr)
-			_sc.equal_strings = _eqstr
-			_sc.equal_strings_index = _index_eq
-			for _key in _eqstr:
-				var _strg: IStringContainer = Handle.string_table[_key].data
-				_strg.equal_strings = _eqstr
-				_strg.equal_strings_index = _index_eq
+			if Handle.string_ids[_key] == sc.original_content:
+				eqstr.append(_key)
+		if eqstr.size() > 1:
+			var index_eq := Handle.string_sstr_arr.size()
+			Handle.string_sstr[sc.original_content] = index_eq
+			Handle.string_sstr_arr.append(eqstr)
+			sc.equal_strings = eqstr
+			sc.equal_strings_index = index_eq
+			for _key in eqstr:
+				var strg: IStringContainer = Handle.string_table[_key].data
+				strg.equal_strings = eqstr
+				strg.equal_strings_index = index_eq
 
 	Handle.string_size += 1
 
-	var _parent: WDialogueHelper = get_parent()
-	_parent.string_selector.clear()
-	for _s: IStringContainer in _entries_arr:
+	var parent: WDialogueHelper = get_parent()
+	parent.string_selector.clear()
+	for s: IStringContainer in entries_arr:
 		# Bloque 1: prefijo de progreso por string.
-		_parent.string_selector.add_item(_parent._string_progress_prefix(_s) + _s.content)
-	_parent.string_selector.select(_insert_at)
-	_parent.string_selector.ensure_current_is_visible()
-	_parent._on_item_list_item_selected_str(_insert_at)
+		parent.string_selector.add_item(parent._string_progress_prefix(s) + s.content)
+	parent.string_selector.select(insert_at)
+	parent.string_selector.ensure_current_is_visible()
+	parent._on_item_list_item_selected_str(insert_at)
 
 	# La entry pasó de "∅" (si estaba vacía) o sigue en "·" (si ya tenía
 	# strings sin traducir). Refrescamos el prefijo de la entry y las stats.
 	if entry != "":
-		_parent.refresh_entry_item_prefix(entry)
-	_parent.update_progress_stats_label()
+		parent.refresh_entry_item_prefix(entry)
+	parent.update_progress_stats_label()
 
 	Handle.is_modified = true
 	queue_free()

@@ -112,9 +112,9 @@ func _find_columns(rows: Array) -> Dictionary:
 	if header_row_index == -1:
 		return cols
 
-	var _header: Array = rows[header_row_index]
-	for _c in range(_header.size()):
-		var header := str(_header[_c]).strip_edges()
+	var local_header: Array = rows[header_row_index]
+	for _c in range(local_header.size()):
+		var header := str(local_header[_c]).strip_edges()
 		if _is_notes_header(header):
 			cols["notes"] = _c
 		elif _is_es_from_en_header(header):

@@ -22,27 +22,27 @@ var force_update := false
 
 var global_env := {}
 
-func _process(_delta: float) -> void:
-	var _update := false
+func _process(delta: float) -> void:
+	var update := false
 	if Handle.layer_strings != last_layer_strings:
 		last_layer_strings = Handle.layer_strings.duplicate()
-		_update = true
+		update = true
 	if Handle.layer_colors != last_layer_colors:
 		last_layer_colors = Handle.layer_colors.duplicate()
-		_update = true
-	var _posx := (box.portrait_offset.x if box.supports_portrait && box.portrait_enabled else box.dialogue_offset.x) * Handle.visual_scale
-	var _posy := (box.portrait_offset.y if box.supports_portrait && box.portrait_enabled else box.dialogue_offset.y) * Handle.visual_scale
-	if Vector2(_posx, _posy) != last_pos:
-		last_pos = Vector2(_posx, _posy)
-		_update = true
+		update = true
+	var posx := (box.portrait_offset.x if box.supports_portrait && box.portrait_enabled else box.dialogue_offset.x) * Handle.visual_scale
+	var posy := (box.portrait_offset.y if box.supports_portrait && box.portrait_enabled else box.dialogue_offset.y) * Handle.visual_scale
+	if Vector2(posx, posy) != last_pos:
+		last_pos = Vector2(posx, posy)
+		update = true
 	if queue_update_secs > 0.0:
-		queue_update_secs -= _delta
+		queue_update_secs -= delta
 		if queue_update_secs <= 0.0:
-			_update = true
+			update = true
 	if force_update:
 		force_update = false
-		_update = true
-	if _update:
+		update = true
+	if update:
 		queue_redraw()
 
 # Procesa `X (backtick-escape) antes que cualquier otra cosa.
@@ -57,9 +57,9 @@ func _process_backtick_escapes(s: String) -> String:
 			continue
 		s = s.replace("`" + orig, ESCAPE_PLACEHOLDERS[orig])
 	# Cualquier `X restante → X (el backtick se come, queda el char).
-	var _rx := RegEx.new()
-	_rx.compile("`(.)")
-	s = _rx.sub(s, "$1", true)
+	var rx := RegEx.new()
+	rx.compile("`(.)")
+	s = rx.sub(s, "$1", true)
 	return s
 
 # Limpieza de tags de preview que no queremos mostrar (\f[X], \m[X]...).
@@ -98,81 +98,81 @@ func _draw() -> void:
 	if Handle.user_script is GDScript:
 		if Handle.user_script_obj == null:
 			Handle.user_script_obj = Handle.user_script.new()
-		var _env := {}
-		var _ls := Handle.layer_strings.duplicate()
-		var _lc := Handle.layer_colors.duplicate()
+		var env := {}
+		var ls := Handle.layer_strings.duplicate()
+		var lc := Handle.layer_colors.duplicate()
 		
-		var _data := IUserData.new()
-		_data.__parent = self
-		_data.env = _env
-		_data.global_env = global_env
-		_data.glyph.layer_strings = _ls
-		_data.glyph.layer_colors = _lc
-		_data.glyph.vscale = Handle.visual_scale
-		_data.char.start_position.x = last_pos.x
-		_data.char.start_position.y = last_pos.y
+		var data := IUserData.new()
+		data.__parent = self
+		data.env = env
+		data.global_env = global_env
+		data.glyph.layer_strings = ls
+		data.glyph.layer_colors = lc
+		data.glyph.vscale = Handle.visual_scale
+		data.char.start_position.x = last_pos.x
+		data.char.start_position.y = last_pos.y
 		if Handle.user_script_obj.has_method("prepare_draw"):
 			@warning_ignore("unsafe_method_access")
-			Handle.user_script_obj.prepare_draw(_data)
+			Handle.user_script_obj.prepare_draw(data)
 		for _layer in range(Handle.layer_strings.size()):
-			_data.glyph.current_layer = _layer
-			_data.char.position_offset = Vector2.ZERO
-			var _index := 0
-			var _current_string: String = Handle.layer_strings[_layer]
+			data.glyph.current_layer = _layer
+			data.char.position_offset = Vector2.ZERO
+			var index := 0
+			var current_string: String = Handle.layer_strings[_layer]
 
 			# 🔹 Primero procesar los escapes con backtick (`X → placeholder / literal).
-			_current_string = _process_backtick_escapes(_current_string)
+			current_string = _process_backtick_escapes(current_string)
 			# 🔹 Luego limpiar etiquetas de preview que no queremos mostrar.
-			_current_string = _clean_preview_text(_current_string)
+			current_string = _clean_preview_text(current_string)
 
-			_data.glyph.color = Handle.layer_colors[_layer]
+			data.glyph.color = Handle.layer_colors[_layer]
 			# ya no necesitamos _escaped_amp porque usamos placeholder
-			for _layer_char: String in _current_string:
+			for _layer_char: String in current_string:
 				# do this so that if the font was changed it changes in real time
-				_data.font = Handle.font_data[Handle.current_font]
-				_data.box = Handle.box_data[box.current_box]
+				data.font = Handle.font_data[Handle.current_font]
+				data.box = Handle.box_data[box.current_box]
 				#
-				_data.char.char = _layer_char
-				_data.char.glyph = Rect2()
-				_data.char.index = _index
-				_data.char.string = _current_string
+				data.char.char = _layer_char
+				data.char.glyph = Rect2()
+				data.char.index = index
+				data.char.string = current_string
 
 				# Si es cualquiera de los placeholders de backtick-escape, rehidratamos
 				# al char literal y levantamos is_escaped para que el script del estilo
 				# salte TODA su lógica de interpretación (/, ^, %, \, &, skip...).
-				var _escaped_to: String = PLACEHOLDER_TO_CHAR.get(_layer_char, "")
-				if _escaped_to != "":
-					_data.char.char = _escaped_to
-					_data.char.is_newline = false
-					_data.char.is_ignore = false
-					_data.char.is_escaped = true
+				var escaped_to: String = PLACEHOLDER_TO_CHAR.get(_layer_char, "")
+				if escaped_to != "":
+					data.char.char = escaped_to
+					data.char.is_newline = false
+					data.char.is_ignore = false
+					data.char.is_escaped = true
 				else:
-					_data.char.is_escaped = false
+					data.char.is_escaped = false
 					# --- Lógica normal para is_newline
 					if Handle.style_metadata.has("NewLines"):
-						var _is_newline: bool = (Handle.style_metadata.NewLines as Array).has(_layer_char)
-						_data.char.is_newline = _is_newline
+						var is_newline: bool = (Handle.style_metadata.NewLines as Array).has(_layer_char)
+						data.char.is_newline = is_newline
 					# Mantener la lógica de "Ignore" del style (sin sobreescribir si ya es true)
 					if Handle.style_metadata.has("Ignore"):
-						_data.char.is_ignore = _data.char.is_ignore or (Handle.style_metadata.Ignore as Array).has(_layer_char)
+						data.char.is_ignore = data.char.is_ignore or (Handle.style_metadata.Ignore as Array).has(_layer_char)
 				
 				if Handle.user_script_obj.has_method("draw_glyph"):
 					@warning_ignore("unsafe_method_access")
-					Handle.user_script_obj.draw_glyph(_data)
-				_index += 1
+					Handle.user_script_obj.draw_glyph(data)
+				index += 1
 		if Handle.user_script_obj.has_method("draw_portrait") && Handle.main_node.box.portrait_enabled && Handle.main_node.box.supports_portrait:
-			_data.char = null
+			data.char = null
 			@warning_ignore("unsafe_method_access")
-			Handle.user_script_obj.draw_portrait(_data)
-		queue_update_secs = _data.queue_update_secs
+			Handle.user_script_obj.draw_portrait(data)
+		queue_update_secs = data.queue_update_secs
 		for _node in box.handle.get_children():
 			if _node is Sprite2D:
-				var _spr: Sprite2D = _node
-				if _spr.texture != null:
-					if _spr.position.x + (_spr.texture.get_width() * _spr.scale.x) > custom_minimum_size.x:
-						custom_minimum_size.x = _spr.position.x + (_spr.texture.get_width() * _spr.scale.x)
-					if _spr.position.y + (_spr.texture.get_height() * _spr.scale.y) > custom_minimum_size.y:
-						custom_minimum_size.y = _spr.position.y + (_spr.texture.get_height() * _spr.scale.y)
+				var spr: Sprite2D = _node
+				if spr.texture != null:
+					if spr.position.x + (spr.texture.get_width() * spr.scale.x) > custom_minimum_size.x:
+						custom_minimum_size.x = spr.position.x + (spr.texture.get_width() * spr.scale.x)
+					if spr.position.y + (spr.texture.get_height() * spr.scale.y) > custom_minimum_size.y:
+						custom_minimum_size.y = spr.position.y + (spr.texture.get_height() * spr.scale.y)
 						
 		# Si el retrato está activo, retrasar la aparición de la barra horizontal unos px
 		if box.portrait_enabled and box.supports_portrait:

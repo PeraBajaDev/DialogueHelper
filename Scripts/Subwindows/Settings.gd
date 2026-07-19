@@ -22,7 +22,7 @@ var _last_url_valid: int = -1  # -1 desconocido, 0 inválida, 1 válida
 
 func _ready() -> void:
 	style_select.clear()
-	var _i := 0
+	var i := 0
 	var logs := PackedStringArray()
 	# Fix: iterar sobre Handle.list_available_styles() en lugar de
 	# DirAccess.get_directories_at directamente. El helper ya filtra carpetas
@@ -31,18 +31,18 @@ func _ready() -> void:
 	# .git, temporales o basura del usuario) acababa como opción seleccionable
 	# y al elegirla load_style fallaba silenciosamente.
 	for _dir in Handle.list_available_styles():
-		var _name := _dir
-		var _style_metadata: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(Handle.style_get_path(&"Metadata.json", _dir)))
-		if _style_metadata == null:
+		var local_name := _dir
+		var style_metadata: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(Handle.style_get_path(&"Metadata.json", _dir)))
+		if style_metadata == null:
 			logs.append("%s had a JSON parsing error." % Handle.style_get_relative_path(&"Metadata.json", _dir))
 			continue
-		elif _style_metadata.has(&"Name"):
-			_name = str(_style_metadata.Name)
-		style_select.add_item(_name, _i)
-		folders[_i] = _dir
+		elif style_metadata.has(&"Name"):
+			local_name = str(style_metadata.Name)
+		style_select.add_item(local_name, i)
+		folders[i] = _dir
 		if _dir == Handle.style:
-			style_select.select(_i)
-		_i += 1
+			style_select.select(i)
+		i += 1
 	if !logs.is_empty(): # An error ocurred.
 		Handle.se_window = Handle.se_scene.instantiate()
 		(Handle.se_window.get_node(^"TextEdit") as TextEdit).text = "\n".join(PackedStringArray(logs))
@@ -70,23 +70,23 @@ func _process(_delta: float) -> void:
 	# Sólo reaccionamos a cambios reales del checkbox de git o del texto de URL.
 	# Sin esto, _process hacía trabajo (asignar text, aplicar theme override)
 	# en cada frame, sin necesidad.
-	var _git_now := enable_git.button_pressed
-	if _git_now != _last_git_enabled:
-		_last_git_enabled = _git_now
-		repo_label.visible = _git_now
+	var git_now := enable_git.button_pressed
+	if git_now != _last_git_enabled:
+		_last_git_enabled = git_now
+		repo_label.visible = git_now
 		# Forzamos recálculo de validez al re-mostrar el panel.
 		_last_url_valid = -1
 		_last_url_text = ""
 
-	if _git_now:
-		var _url_now := git_url.text
-		if _url_now != _last_url_text:
-			_last_url_text = _url_now
-			var _is_valid: bool = check_git_url()
-			var _flag: int = 1 if _is_valid else 0
-			if _flag != _last_url_valid:
-				_last_url_valid = _flag
-				if _is_valid:
+	if git_now:
+		var url_now := git_url.text
+		if url_now != _last_url_text:
+			_last_url_text = url_now
+			var is_valid: bool = check_git_url()
+			var flag: int = 1 if is_valid else 0
+			if flag != _last_url_valid:
+				_last_url_valid = flag
+				if is_valid:
 					url_valid.add_theme_color_override(&"font_color", Color.LIME)
 					url_valid.text = "Url is valid."
 				else:
@@ -94,12 +94,12 @@ func _process(_delta: float) -> void:
 					url_valid.text = "Url is NOT valid."
 
 func check_git_url() -> bool:
-	var _url := git_url.text
-	var _starts_with := false
+	var url := git_url.text
+	var starts_with := false
 	for _begin: String in [&"https://", &"http://", &"git://", &"ssh://"]:
-		if _url.begins_with(_begin):
-			_starts_with = true
-	if _starts_with && _url.ends_with(&".git"):
+		if url.begins_with(_begin):
+			starts_with = true
+	if starts_with && url.ends_with(&".git"):
 		return true
 	return false
 
@@ -108,43 +108,43 @@ func _on_ok_button_pressed() -> void:
 	# Si user:// está bloqueado (permisos, antivirus en Windows, disco lleno),
 	# la app crasheaba al llamar store_string/close sobre un null. Skip silencioso
 	# es el mismo patrón defensivo que ya usa MainNode._save_recent_files.
-	var _f := FileAccess.open(&"user://last_style.txt", FileAccess.WRITE)
-	if _f != null:
-		_f.store_string(style_select.get_item_text(style_select.selected))
-		_f.flush()
-		_f.close()
+	var f := FileAccess.open(&"user://last_style.txt", FileAccess.WRITE)
+	if f != null:
+		f.store_string(style_select.get_item_text(style_select.selected))
+		f.flush()
+		f.close()
 	if enable_git.button_pressed:
-		var _ef := FileAccess.open(&"user://enable_git.bool", FileAccess.WRITE)
-		if _ef != null:
-			_ef.close()
-		_f = FileAccess.open(&"user://git_url.txt", FileAccess.WRITE)
-		if _f != null:
-			_f.store_string(git_url.text.strip_edges())
-			_f.flush()
-			_f.close()
-		_f = FileAccess.open(&"user://git_branch.txt", FileAccess.WRITE)
-		if _f != null:
-			_f.store_string(git_branch.text.strip_edges())
-			_f.flush()
-			_f.close()
+		var ef := FileAccess.open(&"user://enable_git.bool", FileAccess.WRITE)
+		if ef != null:
+			ef.close()
+		f = FileAccess.open(&"user://git_url.txt", FileAccess.WRITE)
+		if f != null:
+			f.store_string(git_url.text.strip_edges())
+			f.flush()
+			f.close()
+		f = FileAccess.open(&"user://git_branch.txt", FileAccess.WRITE)
+		if f != null:
+			f.store_string(git_branch.text.strip_edges())
+			f.flush()
+			f.close()
 		Handle.git.url = git_url.text.strip_edges()
 		Handle.git.branch = git_branch.text.strip_edges()
 		# Usamos la variante estática para no depender de DirAccess.open
 		# (que devuelve null si user:// no se puede abrir, y .dir_exists()
 		# sobre null crashearía).
 		if !DirAccess.dir_exists_absolute("user://repo/"):
-			var _r := Handle.git.clone()
-			Handle.handle_git_output.call_deferred(_r)
-			if !_r.success:
+			var r := Handle.git.clone()
+			Handle.handle_git_output.call_deferred(r)
+			if !r.success:
 				return
 		else:
-			var _r := Handle.git.set_url()
-			Handle.handle_git_output.call_deferred(_r)
-			if !_r.success:
+			var r := Handle.git.set_url()
+			Handle.handle_git_output.call_deferred(r)
+			if !r.success:
 				return
-			_r = Handle.git.pull()
-			Handle.handle_git_output.call_deferred(_r)
-			if !_r.success:
+			r = Handle.git.pull()
+			Handle.handle_git_output.call_deferred(r)
+			if !r.success:
 				return
 	else:
 		if FileAccess.file_exists(&"user://enable_git.bool"):
@@ -161,8 +161,8 @@ func _on_cancel_button_pressed() -> void:
 func _on_close_requested() -> void:
 	queue_free()
 
-func _on_option_button_item_selected(_index: int) -> void:
-	Handle.load_style(folders[_index])
+func _on_option_button_item_selected(index: int) -> void:
+	Handle.load_style(folders[index])
 	Handle.main_node.box.handle.force_update = true
 	changed_style = true
 	# El estilo cambió → el label del autor puede haber cambiado también.

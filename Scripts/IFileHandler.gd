@@ -49,9 +49,9 @@ func load_file(path: String, override_path: String = "", override_modified: bool
 	# Los dos parámetros opcionales controlan ese caso. Para una carga
 	# normal se dejan en sus defaults.
 	Handle.main_node.clear_data()
-	var _cthr := Thread.new()
-	_cthr.start(func() -> void:
-		var _cleanup_on_fail := func() -> void:
+	var cthr := Thread.new()
+	cthr.start(func() -> void:
+		var cleanup_on_fail := func() -> void:
 			if Handle.loading_window != null:
 				Handle.loading_window.call_deferred("queue_free")
 		if FileAccess.file_exists("user://enable_git.bool"):
@@ -59,7 +59,7 @@ func load_file(path: String, override_path: String = "", override_modified: bool
 			var git_response := Handle.git.pull()
 			Handle.handle_git_output.call_deferred(git_response)
 			if !git_response.success:
-				_cleanup_on_fail.call()
+				cleanup_on_fail.call()
 				return
 		Handle.loading_window.label.set_text.call_deferred("Loading...")
 		Handle.main_node.dialogue_selector.clear.call_deferred()
@@ -97,27 +97,27 @@ func load_file(path: String, override_path: String = "", override_modified: bool
 		# Cacheo de similar entries en estructuras LOCALES.
 		var local_string_sstr := {}
 		var local_string_sstr_arr: Array[Array] = []
-		var _eqstr := {}
-		var _eqstrarr := []
+		var eqstr := {}
+		var eqstrarr := []
 		var v := 0
 		Handle.loading_window.label.set_text.call_deferred("Caching similar entries... [This may take a long time.]")
 		Handle.loading_window.progress_bar.set_value.call_deferred(0)
 		Handle.loading_window.progress_bar.set_max.call_deferred(local_string_table.size() * 2)
 		for entry: int in local_string_table.keys():
 			var string_container: IStringContainer = local_string_table[entry].data
-			if !_eqstr.has(string_container.original_content):
-				_eqstr[string_container.original_content] = _eqstrarr.size()
+			if !eqstr.has(string_container.original_content):
+				eqstr[string_container.original_content] = eqstrarr.size()
 				var arr: Array[int] = [string_container.id]
 				string_container.equal_strings = arr
-				_eqstrarr.append(arr)
+				eqstrarr.append(arr)
 			else:
-				var arr: Array[int] = _eqstrarr[_eqstr[string_container.original_content]]
+				var arr: Array[int] = eqstrarr[eqstr[string_container.original_content]]
 				arr.append(string_container.id)
 				string_container.equal_strings = arr
 			v += 1
 			Handle.loading_window.progress_bar.set_value.call_deferred(v)
-		for key: String in _eqstr.keys():
-			var entries: Array = _eqstrarr[_eqstr[key]]
+		for key: String in eqstr.keys():
+			var entries: Array = eqstrarr[eqstr[key]]
 			if entries.size() > 1:
 				var index := local_string_sstr_arr.size()
 				local_string_sstr[key] = index
@@ -174,7 +174,7 @@ func load_file(path: String, override_path: String = "", override_modified: bool
 				Handle.main_node._show_load_warning(warning_message)
 		commit.call_deferred()
 	)
-	return _cthr
+	return cthr
 
 func _select_first_entry() -> void:
 	if Handle.main_node == null:
@@ -195,7 +195,7 @@ func _select_first_entry() -> void:
 	# string_selector y se cargue la primera string en el editor de capas.
 	Handle.main_node._on_item_list_item_selected(0)
 
-func load_file_data(path: String, _apply_settings := true, _is_thread := false) -> ILoadFile:
+func load_file_data(path: String, apply_settings := true, is_thread := false) -> ILoadFile:
 	var strings := {}
 	var string_table := {}
 	var string_ids := {}
@@ -233,23 +233,23 @@ func load_file_data(path: String, _apply_settings := true, _is_thread := false) 
 		file_loader.error_message = "File could not be parsed (no recognizable lines):\n%s" % path
 		return file_loader
 
-	if _is_thread:
+	if is_thread:
 		Handle.loading_window.progress_bar.set_max.call_deferred(arr.size())
 
 	var total := 0
-	var _current_entry := ""
+	var current_entry := ""
 	var entries := []
-	var _is_entry := false
+	var is_entry := false
 	var malformed_count := 0  # contamos líneas raras para reportar al final
 
 	for _line: IFormatEntry in arr:
-		if (_line.kind == 0 || _line.kind == 8) && _is_entry:
-			strings[_current_entry] = entries
+		if (_line.kind == 0 || _line.kind == 8) && is_entry:
+			strings[current_entry] = entries
 			entries = []
 		match _line.kind:
 			9:
-				if _apply_settings:
-					if _is_thread:
+				if apply_settings:
+					if is_thread:
 						Handle.load_style.call_deferred(_line.data["Style"])
 					else:
 						Handle.load_style(_line.data["Style"])
@@ -258,23 +258,23 @@ func load_file_data(path: String, _apply_settings := true, _is_thread := false) 
 					# Entry sin ID: línea malformada. La saltamos y contamos.
 					malformed_count += 1
 				else:
-					_current_entry = _line.data.ID
-					entry_names.append(_current_entry)
-					_is_entry = true
+					current_entry = _line.data.ID
+					entry_names.append(current_entry)
+					is_entry = true
 			1:
 				_line.data.ID = last_string_id
 				last_string_id += 1
-				var _cont := IStringContainer.new(_line)
-				if _is_thread:
-					string_table[_cont.id] = IStringTable.new(_current_entry, _cont.content, entries.size(), _cont)
-				string_ids[_cont.id] = _cont.content
-				entries.append(_cont)
+				var cont := IStringContainer.new(_line)
+				if is_thread:
+					string_table[cont.id] = IStringTable.new(current_entry, cont.content, entries.size(), cont)
+				string_ids[cont.id] = cont.content
+				entries.append(cont)
 			_:
 				# kind no reconocido (≠ 0,1,8,9). Lo ignoramos pero contamos
 				# para el reporte final. kind=8 es marcador EOF.
 				if _line.kind != 8:
 					malformed_count += 1
-		if _is_thread:
+		if is_thread:
 			total += 1
 			Handle.loading_window.progress_bar.set_value.call_deferred(total)
 	file_loader.strings = strings
@@ -469,10 +469,10 @@ func _write_data(path: String, data: Array) -> bool:
 	if not FileAccess.file_exists(path):
 		var new_file := FileAccess.open(path, FileAccess.WRITE)
 		if new_file == null:
-			var _err_new := FileAccess.get_open_error()
-			push_error("Failed to open %s for writing (error %d)" % [path, _err_new])
+			var err_new := FileAccess.get_open_error()
+			push_error("Failed to open %s for writing (error %d)" % [path, err_new])
 			Handle.saving_window.label.set_text.call_deferred(
-				"Error: could not save to\n%s\n(error %d)" % [path, _err_new]
+				"Error: could not save to\n%s\n(error %d)" % [path, err_new]
 			)
 			return false
 		new_file.store_string(payload)

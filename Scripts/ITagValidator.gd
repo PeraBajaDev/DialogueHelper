@@ -52,14 +52,14 @@ class TagDiff extends RefCounted:
 	func to_label_text() -> String:
 		if ok:
 			return "✓ Tags OK"
-		var _parts: PackedStringArray = PackedStringArray()
+		var parts: PackedStringArray = PackedStringArray()
 		if not missing.is_empty():
-			_parts.append("Missing: " + " ".join(missing))
+			parts.append("Missing: " + " ".join(missing))
 		if not extra.is_empty():
-			_parts.append("Extra: " + " ".join(extra))
+			parts.append("Extra: " + " ".join(extra))
 		if order_mismatch:
-			_parts.append("Wrong order")
-		return "⚠ " + "  ·  ".join(_parts)
+			parts.append("Wrong order")
+		return "⚠ " + "  ·  ".join(parts)
 
 # Patrones de etiquetas estrictas. Orden importa: las más específicas
 # primero (\c[x] antes de \C\b por si el regex se solapa). El regex de
@@ -170,7 +170,7 @@ static func _count_tags(value: String) -> Dictionary:
 	var counts: Dictionary = {}
 
 	# Símbolos: %% antes que %, así contamos %% una vez y NO dos como %.
-	var symbol_pos_consumed: Array[int] = [] # Variable declarada pero no usada
+	var _symbol_pos_consumed: Array[int] = [] # Variable declarada pero no usada
 	var work: String = clean_string
 
 	# Reemplazamos los %% encontrados por marcadores invisibles para que el
@@ -191,34 +191,34 @@ static func _count_tags(value: String) -> Dictionary:
 	# Marcadores inline como ~1, ~2, etc. Se conservan individualmente para
 	# que el validador detecte tanto ausencias como cambios de valor.
 	for pattern: String in _STRICT_INLINE_PATTERNS:
-		var _inline_re := RegEx.new()
-		if _inline_re.compile(pattern) != OK:
+		var inline_re := RegEx.new()
+		if inline_re.compile(pattern) != OK:
 			continue
-		for _m: RegExMatch in _inline_re.search_all(clean_string):
-			var _full: String = _m.get_string(0)
+		for _m: RegExMatch in inline_re.search_all(clean_string):
+			var full: String = _m.get_string(0)
 			# Dictionary.get() devuelve Variant. Evitamos int(Variant), que el
 			# analizador estricto marca como UNSAFE_CALL_ARGUMENT.
-			if counts.has(_full):
-				var _current: Variant = counts[_full]
-				if _current is int:
-					counts[_full] = _current + 1
+			if counts.has(full):
+				var current: Variant = counts[full]
+				if current is int:
+					counts[full] = current + 1
 				else:
-					counts[_full] = 1
+					counts[full] = 1
 			else:
-				counts[_full] = 1
+				counts[full] = 1
 
 	# Tags con barra invertida: usamos las regex precompiladas y cacheadas.
 	for re: RegEx in _get_strict_regexes():
-		var _matches: Array[RegExMatch] = re.search_all(clean_string)
-		for _m: RegExMatch in _matches:
-			var _full: String = _m.get_string(0)
+		var matches: Array[RegExMatch] = re.search_all(clean_string)
+		for _m: RegExMatch in matches:
+			var full: String = _m.get_string(0)
 			# Para color_ut, choice_ut y otros sin parámetro, _full ya es la
 			# representación humana ("\R", "\C"). Para los con parámetro,
 			# _full incluye el parámetro ("\E[2]" → en realidad \E2 según el
 			# formato del juego, pero respetamos el original).
-			if not counts.has(_full):
-				counts[_full] = 0
-			counts[_full] += 1
+			if not counts.has(full):
+				counts[full] = 0
+			counts[full] += 1
 	return counts
 
 # Extrae todas las tags estrictas en el ORDEN en que aparecen. A diferencia
@@ -233,13 +233,13 @@ static func _count_tags(value: String) -> Dictionary:
 # las más específicas primero (%% antes de %, \C[1-9] antes de \C suelta).
 static func _extract_tag_sequence(value: String) -> PackedStringArray:
 	var clean_string: String = _strip_backtick_escapes(value)
-	var _result: PackedStringArray = PackedStringArray()
+	var result: PackedStringArray = PackedStringArray()
 	# RegEx combinada precompilada (ver _get_sequence_regex). El orden de las
 	# alternativas se documenta allí, junto a su compilación.
 	var re: RegEx = _get_sequence_regex()
 	for _m: RegExMatch in re.search_all(clean_string):
-		_result.append(_m.get_string(0))
-	return _result
+		result.append(_m.get_string(0))
+	return result
 
 # Compara original vs translation y devuelve un TagDiff.
 static func validate(original: String, translation: String) -> TagDiff:

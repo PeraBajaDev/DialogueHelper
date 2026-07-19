@@ -154,12 +154,12 @@ var last_size := Vector2i.ZERO
 # FileDialog del export JSON — se crea programáticamente en export_to_json_flow.
 var _fdj_window: FileDialog = null
 
-func _configure_dialogue_tab_visuals(_edit: TextEdit) -> void:
+func _configure_dialogue_tab_visuals(edit: TextEdit) -> void:
 	# draw_tabs usa el indicador nativo de TextEdit (flecha/marca de tab según
 	# el tema). No reemplaza U+0009 por un carácter visible ni toca el texto.
-	_edit.draw_tabs = true
-	_edit.draw_spaces = false
-	_edit.set_tab_size(_DIALOGUE_EDITOR_TAB_SIZE)
+	edit.draw_tabs = true
+	edit.draw_spaces = false
+	edit.set_tab_size(_DIALOGUE_EDITOR_TAB_SIZE)
 
 func _ready() -> void:
 	# Sólo los editores inferiores muestran los TAB. La preview sigue usando
@@ -200,9 +200,9 @@ func _ready() -> void:
 	recent_popup = PopupMenu.new()
 	recent_popup.name = "RecentSubmenu"
 	file_popup.add_child(recent_popup)
-	var _recent_idx: int = file_popup.get_item_index(11)  # id 11 = "Open Recent"
-	if _recent_idx != -1:
-		file_popup.set_item_submenu_node(_recent_idx, recent_popup)
+	var recent_idx: int = file_popup.get_item_index(11)  # id 11 = "Open Recent"
+	if recent_idx != -1:
+		file_popup.set_item_submenu_node(recent_idx, recent_popup)
 	recent_popup.id_pressed.connect(_on_recent_selected)
 	file_popup.about_to_popup.connect(_rebuild_recent_submenu)
 	file_popup.about_to_popup.connect(_update_file_menu_items)
@@ -226,19 +226,19 @@ func _ready() -> void:
 	# que git no encuentra, asterisco al lado del nombre del autor...).
 	# strip_edges() limpia espacios y saltos al inicio/final.
 	if FileAccess.file_exists("user://username.txt"):
-		author = FileAccess.get_file_as_string("user://username.txt").strip_edges()
+		author = FileAccess.get_file_as_string("user://userlocal_name.txt").strip_edges()
 	if FileAccess.file_exists("user://enable_git.bool"):
-		var _branch := ""
+		var branch := ""
 		if FileAccess.file_exists("user://git_branch.txt"):
-			_branch = FileAccess.get_file_as_string("user://git_branch.txt").strip_edges()
+			branch = FileAccess.get_file_as_string("user://git_branch.txt").strip_edges()
 		Handle.git.url = FileAccess.get_file_as_string("user://git_url.txt").strip_edges()
-		Handle.git.branch = _branch
+		Handle.git.branch = branch
 	if FileAccess.file_exists("user://scale.txt"):
-		var _raw := FileAccess.get_file_as_string("user://scale.txt").strip_escapes().strip_edges()
-		var _v := float(_raw)
-		if _v > 0.0:
-			current_scale_node.value = _v
-			Handle.visual_scale = _v  # Sync para evitar is_modified=true espurio en el primer frame.
+		var raw := FileAccess.get_file_as_string("user://scale.txt").strip_escapes().strip_edges()
+		var v := float(raw)
+		if v > 0.0:
+			current_scale_node.value = v
+			Handle.visual_scale = v  # Sync para evitar is_modified=true espurio en el primer frame.
 
 	current_layer_node.max_value = Handle.layers
 	current_font_node.max_value = 8
@@ -257,15 +257,15 @@ func _ready() -> void:
 	#     seguridad para llamadas que no son el arranque (Settings, Reload
 	#     Style, etc.). Si por carrera de archivos el Style desaparece justo
 	#     entre listar y cargar, no se cuelga la app.
-	var _stored_style: String = ""
+	var stored_style: String = ""
 	if FileAccess.file_exists("user://last_style.txt"):
-		_stored_style = FileAccess.get_file_as_string("user://last_style.txt").strip_edges()
+		stored_style = FileAccess.get_file_as_string("user://last_style.txt").strip_edges()
 
-	var _stored_is_valid: bool = _stored_style != "" \
-		and FileAccess.file_exists(Handle.style_get_path("Metadata.json", _stored_style))
+	var stored_is_valid: bool = stored_style != "" \
+		and FileAccess.file_exists(Handle.style_get_path("Metadata.json", stored_style))
 
-	if _stored_is_valid:
-		Handle.load_style(_stored_style)
+	if stored_is_valid:
+		Handle.load_style(stored_style)
 	else:
 		Handle.load_style(Handle.pick_default_style())
 		if Handle.list_available_styles().size() >= 2:
@@ -337,7 +337,7 @@ func _process(_delta: float) -> void:
 		# unas líneas más abajo; antes lo sobrescribíamos aquí con basura y se
 		# corregía en el mismo frame, causando parpadeo.
 	if current_font_node.value - 1 != current_font_id:
-		var _new_font := int(current_font_node.value - 1)
+		var new_font := int(current_font_node.value - 1)
 		# Detectar si esto es sincronización con la string seleccionada (cambió
 		# el SpinBox porque cambió la string activa) o si fue el usuario quien
 		# pulsó el SpinBox. Si el valor coincide con el font_style de la string
@@ -346,18 +346,18 @@ func _process(_delta: float) -> void:
 		# pero con una entry filtrada esos no apuntan a la string cargada.
 		# Vamos por _get_current_string_container, que consulta current_entry
 		# y current_string_index.
-		var _is_sync := false
-		var _stri_ref: IStringContainer = _get_current_string_container()
-		if _stri_ref != null and _stri_ref.font_style == _new_font:
-			_is_sync = true
-		update_font(_new_font, !_is_sync)
-		if !_is_sync && _stri_ref != null:
-			_stri_ref.font_style = current_font_id
+		var is_sync := false
+		var stri_ref: IStringContainer = _get_current_string_container()
+		if stri_ref != null and stri_ref.font_style == new_font:
+			is_sync = true
+		update_font(new_font, !is_sync)
+		if !is_sync && stri_ref != null:
+			stri_ref.font_style = current_font_id
 	if current_box_node.value - 1 != current_box:
-		var _new_box := int(current_box_node.value - 1)
-		var _is_sync_b := false
-		var _stri_ref_b: IStringContainer = _get_current_string_container()
-		if _stri_ref_b != null:
+		var new_box := int(current_box_node.value - 1)
+		var is_sync_b := false
+		var stri_ref_b: IStringContainer = _get_current_string_container()
+		if stri_ref_b != null:
 			# Issue #3: además del valor guardado en `box_style`,
 			# aceptamos como "sync" cualquier valor que coincida con
 			# `_resolve_box_style`. Sin esto, al seleccionar una
@@ -365,13 +365,13 @@ func _process(_delta: float) -> void:
 			# SpinBox en Box7, _process detecta el cambio, no
 			# encuentra match con `box_style` (que sigue siendo 0)
 			# y marca el archivo como modificado al instante.
-			if _stri_ref_b.box_style == _new_box:
-				_is_sync_b = true
-			elif _resolve_box_style(_stri_ref_b) == _new_box:
-				_is_sync_b = true
-		update_box(_new_box, !_is_sync_b)
-		if !_is_sync_b && _stri_ref_b != null:
-			_stri_ref_b.box_style = current_box
+			if stri_ref_b.box_style == new_box:
+				is_sync_b = true
+			elif _resolve_box_style(stri_ref_b) == new_box:
+				is_sync_b = true
+		update_box(new_box, !is_sync_b)
+		if !is_sync_b && stri_ref_b != null:
+			stri_ref_b.box_style = current_box
 	if current_scale_node.value != Handle.visual_scale:
 		Handle.is_modified = true
 		Handle.visual_scale = current_scale_node.value
@@ -500,18 +500,18 @@ func _input(event: InputEvent) -> void:
 	# Cualquier otra combinación (Shift de por medio, los dos a la vez, o ninguno)
 	# no hace nada y deja pasar el evento, para no romper la edición/selección
 	# normal del texto.
-	var _only_ctrl: bool = ke.ctrl_pressed and not ke.alt_pressed and not ke.shift_pressed
-	var _only_alt: bool = ke.alt_pressed and not ke.ctrl_pressed and not ke.shift_pressed
-	if not (_only_ctrl or _only_alt):
+	var only_ctrl: bool = ke.ctrl_pressed and not ke.alt_pressed and not ke.shift_pressed
+	var only_alt: bool = ke.alt_pressed and not ke.ctrl_pressed and not ke.shift_pressed
+	if not (only_ctrl or only_alt):
 		return
 	# Si hay una operación de disco en curso, ignoramos los atajos.
 	if _io_busy():
 		return
-	var _delta: int = -1 if ke.keycode == KEY_UP else 1
-	if _only_ctrl:
-		_nav_string(_delta)
+	var delta: int = -1 if ke.keycode == KEY_UP else 1
+	if only_ctrl:
+		_nav_string(delta)
 	else:
-		_nav_entry(_delta)
+		_nav_entry(delta)
 	# Dejar el recuadro listo para escribir (flujo 100% teclado).
 	_focus_dialogue_edit_for_keyboard()
 	get_viewport().set_input_as_handled()
@@ -523,19 +523,19 @@ func _focus_dialogue_edit_for_keyboard() -> void:
 	if not is_instance_valid(dialogue_edit):
 		return
 	dialogue_edit.grab_focus()
-	var _last_line: int = maxi(dialogue_edit.get_line_count() - 1, 0)
+	var last_line: int = maxi(dialogue_edit.get_line_count() - 1, 0)
 	dialogue_edit.deselect()
-	dialogue_edit.set_caret_line(_last_line)
-	dialogue_edit.set_caret_column(dialogue_edit.get_line(_last_line).length())
+	dialogue_edit.set_caret_line(last_line)
+	dialogue_edit.set_caret_column(dialogue_edit.get_line(last_line).length())
 
 # Navegación por teclado entre STRINGS de la entry cargada (Ctrl+↑ / Ctrl+↓).
 # Mueve la selección de string_selector y dispara el mismo handler que un click,
 # porque select() no emite la señal item_selected por sí solo.
-func _nav_string(_delta: int) -> void:
+func _nav_string(delta: int) -> void:
 	if current_entry == "" or not Handle.strings.has(current_entry):
 		return
-	var _count: int = string_selector.get_item_count()
-	if _count == 0:
+	var count: int = string_selector.get_item_count()
+	if count == 0:
 		return
 	# Sin string cargada todavía: la primera pulsación selecciona la primera.
 	if current_string_index < 0:
@@ -543,43 +543,43 @@ func _nav_string(_delta: int) -> void:
 		string_selector.ensure_current_is_visible()
 		_on_item_list_item_selected_str(0)
 		return
-	var _new: int = clampi(current_string_index + _delta, 0, _count - 1)
-	if _new == current_string_index:
+	var new: int = clampi(current_string_index + delta, 0, count - 1)
+	if new == current_string_index:
 		return
-	string_selector.select(_new)
+	string_selector.select(new)
 	string_selector.ensure_current_is_visible()
-	_on_item_list_item_selected_str(_new)
+	_on_item_list_item_selected_str(new)
 
 # Navegación por teclado entre ENTRIES (Alt+↑ / Alt+↓).
 # Opera sobre dialogue_selector, que puede estar filtrado por Search/GoTo, así
 # que el índice actual se resuelve por selección visible y, si no, por nombre.
-func _nav_entry(_delta: int) -> void:
-	var _count: int = dialogue_selector.get_item_count()
-	if _count == 0:
+func _nav_entry(delta: int) -> void:
+	var count: int = dialogue_selector.get_item_count()
+	if count == 0:
 		return
-	var _cur: int = -1
-	var _sel: PackedInt32Array = dialogue_selector.get_selected_items()
-	if _sel.size() > 0:
-		_cur = _sel[0]
+	var cur: int = -1
+	var sel: PackedInt32Array = dialogue_selector.get_selected_items()
+	if sel.size() > 0:
+		cur = sel[0]
 	else:
-		for _i in _count:
+		for _i in count:
 			if dialogue_selector_entry_at(_i) == current_entry:
-				_cur = _i
+				cur = _i
 				break
-	var _new: int
-	if _cur == -1:
+	var new: int
+	if cur == -1:
 		# La entry cargada no está en la lista visible (filtro activo): arrancamos
 		# por el extremo correspondiente al sentido de la pulsación.
-		_new = 0 if _delta > 0 else _count - 1
+		new = 0 if delta > 0 else count - 1
 	else:
-		_new = clampi(_cur + _delta, 0, _count - 1)
-		if _new == _cur:
+		new = clampi(cur + delta, 0, count - 1)
+		if new == cur:
 			return
-	dialogue_selector.select(_new)
+	dialogue_selector.select(new)
 	dialogue_selector.ensure_current_is_visible()
 	# select() no emite item_selected; replicamos el click: change_to() limpia y
 	# carga la entry, y se repuebla string_selector seleccionando la primera string.
-	_on_item_list_item_selected(_new)
+	_on_item_list_item_selected(new)
 
 # Marca los aceleradores en el menú File (solo para MOSTRAR "Ctrl+S", etc. junto
 # al texto). La lógica real vive en _unhandled_key_input() — así no se dispara
@@ -595,9 +595,9 @@ func _setup_menu_accelerators() -> void:
 # Helper tipado — evita los UNTYPED_DECLARATION / UNSAFE_CALL_ARGUMENT que salen
 # cuando se itera un Array sin tipo.
 func _set_accel_if_present(menu_id: int, accel: int) -> void:
-	var _idx: int = file_popup.get_item_index(menu_id)
-	if _idx != -1:
-		file_popup.set_item_accelerator(_idx, accel)
+	var idx: int = file_popup.get_item_index(menu_id)
+	if idx != -1:
+		file_popup.set_item_accelerator(idx, accel)
 
 # Actualiza el estado habilitado/deshabilitado de las opciones de borrado
 # justo antes de mostrar el menú File. Se llama desde about_to_popup.
@@ -613,20 +613,20 @@ func _set_accel_if_present(menu_id: int, accel: int) -> void:
 #     fiable de "string añadida por el usuario vs. string del archivo original",
 #     y sobrevive guardados y reaperturas porque está en el propio nombre.
 func _update_file_menu_items() -> void:
-	var _idx_del_entry: int = file_popup.get_item_index(9)
-	var _idx_del_string: int = file_popup.get_item_index(10)
-	var _idx_clear_ref: int = file_popup.get_item_index(14)
+	var idx_del_entry: int = file_popup.get_item_index(9)
+	var idx_del_string: int = file_popup.get_item_index(10)
+	var idx_clear_ref: int = file_popup.get_item_index(14)
 
-	if _idx_del_entry != -1:
-		file_popup.set_item_disabled(_idx_del_entry, _file_was_opened)
+	if idx_del_entry != -1:
+		file_popup.set_item_disabled(idx_del_entry, _file_was_opened)
 
-	if _idx_del_string != -1:
-		var _clave: String = _get_current_clave()
-		var _is_sp: bool = _clave.begins_with("sp_")
-		file_popup.set_item_disabled(_idx_del_string, not _is_sp)
+	if idx_del_string != -1:
+		var clave: String = _get_current_clave()
+		var is_sp: bool = clave.begins_with("sp_")
+		file_popup.set_item_disabled(idx_del_string, not is_sp)
 
-	if _idx_clear_ref != -1:
-		file_popup.set_item_disabled(_idx_clear_ref, reference_table.source_path == "")
+	if idx_clear_ref != -1:
+		file_popup.set_item_disabled(idx_clear_ref, reference_table.source_path == "")
 
 func _io_busy() -> bool:
 	if IFileHandler.io_in_progress:
@@ -649,17 +649,17 @@ func _join_pending_threads() -> void:
 # cuando hay 2+ Styles disponibles. Diferido al siguiente frame desde _ready
 # para que la UI principal esté ya en su sitio cuando se superponga el modal.
 func _show_style_picker() -> void:
-	var _w := preload("res://Subwindows/StyleSelector.tscn").instantiate()
-	add_child(_w)
+	var w := preload("res://Subwindows/StyleSelector.tscn").instantiate()
+	add_child(w)
 
 # Helper: asigna texto al editor sin disparar la lógica de "edición del usuario".
 # Lo usamos en cualquier sitio que reescriba `dialogue_edit.text` por motivos
 # que NO son una pulsación del usuario (cambio de string, cambio de capa,
 # clear_data...). Sin esto, esas asignaciones disparan text_changed y
 # is_modified termina marcado a true por nada.
-func _set_dialogue_edit_text_silent(_t: String) -> void:
+func _set_dialogue_edit_text_silent(t: String) -> void:
 	_suppress_text_signal = true
-	dialogue_edit.text = _t
+	dialogue_edit.text = t
 	_suppress_text_signal = false
 
 # ---------------------------------------------------------------------------
@@ -692,59 +692,59 @@ const _PROGRESS_PREFIX_WARN: String = "⚠ "
 const _PROGRESS_PREFIX_REVIEW: String = "★ "
 const _PROGRESS_PREFIXES: Array[String] = ["✓ ", "· ", "∅ ","¡? ", "⚠ ", "★ "]
 
-func _strip_progress_prefix(_text: String) -> String:
+func _strip_progress_prefix(text: String) -> String:
 	for _p: String in _PROGRESS_PREFIXES:
-		if _text.begins_with(_p):
-			return _text.substr(_p.length())
-	return _text
+		if text.begins_with(_p):
+			return text.substr(_p.length())
+	return text
 
 # Wrapper público: devuelve el nombre real (sin prefijo) del item del
 # dialogue_selector en el índice indicado. Es el equivalente "limpio" de
 # `dialogue_selector_entry_at(_i)` y debe usarse siempre que el valor
 # se vaya a buscar en Handle.strings o comparar con un nombre real.
-func dialogue_selector_entry_at(_index: int) -> String:
-	if _index < 0 or _index >= dialogue_selector.get_item_count():
+func dialogue_selector_entry_at(index: int) -> String:
+	if index < 0 or index >= dialogue_selector.get_item_count():
 		return ""
-	return _strip_progress_prefix(dialogue_selector.get_item_text(_index))
+	return _strip_progress_prefix(dialogue_selector.get_item_text(index))
 
-func _entry_progress_prefix(_entry_name: String) -> String:
-	if not Handle.strings.has(_entry_name):
+func _entry_progress_prefix(entry_local_name: String) -> String:
+	if not Handle.strings.has(entry_local_name):
 		return _PROGRESS_PREFIX_EMPTY
-	var _arr: Array = Handle.strings[_entry_name]
-	if _arr.is_empty():
+	var arr: Array = Handle.strings[entry_local_name]
+	if arr.is_empty():
 		return _PROGRESS_PREFIX_EMPTY
 	# Bloque 2: prioridad de prefijo (mismo orden que _state_to_prefix).
 	# Tag mismatch tiene prioridad sobre review porque es un problema
 	# técnico que rompe el juego, mientras que review es un recordatorio.
-	var _has_mismatch: bool = false
-	var _has_review: bool = false
-	var _has_unclosed_sign: bool = false
-	for _stri: IStringContainer in _arr:
+	var has_mismatch: bool = false
+	var has_review: bool = false
+	var has_unclosed_sign: bool = false
+	for _stri: IStringContainer in arr:
 		if _string_has_tag_mismatch(_stri):
-			_has_mismatch = true
+			has_mismatch = true
 			break  # No hace falta seguir, mismatch ya gana
 		if _stri.needs_review:
-			_has_review = true
-		_has_unclosed_sign = _string_has_misclosed_sign(_stri)
-	if _has_mismatch:
+			has_review = true
+		has_unclosed_sign = _string_has_misclosed_sign(_stri)
+	if has_mismatch:
 		return _PROGRESS_PREFIX_WARN
-	if _has_review:
+	if has_review:
 		return _PROGRESS_PREFIX_REVIEW
-	if _has_unclosed_sign:
+	if has_unclosed_sign:
 		return _PROGRESS_PREFIX_UNCLOSED_SIGN
-	if Handle.is_entry_fully_translated(_entry_name):
+	if Handle.is_entry_fully_translated(entry_local_name):
 		return _PROGRESS_PREFIX_DONE
 	return _PROGRESS_PREFIX_TODO
 
-func _string_progress_prefix(_stri: IStringContainer) -> String:
+func _string_progress_prefix(stri: IStringContainer) -> String:
 	# Misma prioridad que en entries: mismatch > review > done > todo.
-	if _string_has_tag_mismatch(_stri):
+	if _string_has_tag_mismatch(stri):
 		return _PROGRESS_PREFIX_WARN
-	if _stri != null and _stri.needs_review:
+	if stri != null and stri.needs_review:
 		return _PROGRESS_PREFIX_REVIEW
-	if _string_has_misclosed_sign(_stri):
+	if _string_has_misclosed_sign(stri):
 		return _PROGRESS_PREFIX_UNCLOSED_SIGN
-	if Handle.is_string_translated(_stri):
+	if Handle.is_string_translated(stri):
 		return _PROGRESS_PREFIX_DONE
 	return _PROGRESS_PREFIX_TODO
 
@@ -752,55 +752,55 @@ func _string_progress_prefix(_stri: IStringContainer) -> String:
 # relevantes (en original o en traducción). Una string sin tags no se
 # considera "mismatch" — `validate_string` devuelve ok=true igualmente,
 # pero centralizamos aquí por claridad.
-func _string_has_tag_mismatch(_stri: IStringContainer) -> bool:
-	if _stri == null:
+func _string_has_tag_mismatch(stri: IStringContainer) -> bool:
+	if stri == null:
 		return false
-	var _diff := ITagValidator.validate_string(_stri)
-	return not _diff.ok
+	var diff := ITagValidator.validate_string(stri)
+	return not diff.ok
 
-func _string_has_misclosed_sign(_stri: IStringContainer) -> bool:
-	if _stri == null:
+func _string_has_misclosed_sign(stri: IStringContainer) -> bool:
+	if stri == null:
 		return false
-	var _diff := IClosedSignValidator.validate_string(_stri)
-	return not _diff.ok
+	var diff := IClosedSignValidator.validate_string(stri)
+	return not diff.ok
 # Recalcula el prefijo del item de dialogue_selector que corresponde a la
 # entry indicada. Si por algún motivo no se encuentra, no hace nada.
-func refresh_entry_item_prefix(_entry_name: String) -> void:
+func refresh_entry_item_prefix(entry_local_name: String) -> void:
 	if dialogue_selector == null:
 		return
 	for _i in range(dialogue_selector.get_item_count()):
-		var _txt := _strip_progress_prefix(dialogue_selector.get_item_text(_i))
-		if _txt == _entry_name:
-			dialogue_selector.set_item_text(_i, _entry_progress_prefix(_entry_name) + _entry_name)
+		var txt := _strip_progress_prefix(dialogue_selector.get_item_text(_i))
+		if txt == entry_local_name:
+			dialogue_selector.set_item_text(_i, _entry_progress_prefix(entry_local_name) + entry_local_name)
 			return
 
 # Recalcula el prefijo de un item del string_selector. La string vista en el
 # selector usa _stri.content como texto.
-func refresh_string_item_prefix(_index: int, _stri: IStringContainer) -> void:
-	if string_selector == null or _index < 0 or _index >= string_selector.get_item_count():
+func refresh_string_item_prefix(index: int, stri: IStringContainer) -> void:
+	if string_selector == null or index < 0 or index >= string_selector.get_item_count():
 		return
-	string_selector.set_item_text(_index, _string_progress_prefix(_stri) + _stri.content)
+	string_selector.set_item_text(index, _string_progress_prefix(stri) + stri.content)
 
 # Refresca todos los items de dialogue_selector. Útil tras cargar un archivo.
 func refresh_all_entry_prefixes() -> void:
 	if dialogue_selector == null:
 		return
 	for _i in range(dialogue_selector.get_item_count()):
-		var _name := _strip_progress_prefix(dialogue_selector.get_item_text(_i))
-		dialogue_selector.set_item_text(_i, _entry_progress_prefix(_name) + _name)
+		var local_name := _strip_progress_prefix(dialogue_selector.get_item_text(_i))
+		dialogue_selector.set_item_text(_i, _entry_progress_prefix(local_name) + local_name)
 
 # Label de estadísticas globales: "1234 / 5678 strings (21.7%)"
 func update_progress_stats_label() -> void:
 	if progress_stats_label == null:
 		return
-	var _p := Handle.global_translation_progress()
-	var _done: int = _p[0]
-	var _total: int = _p[1]
-	if _total == 0:
+	var p := Handle.global_translation_progress()
+	var done: int = p[0]
+	var total: int = p[1]
+	if total == 0:
 		progress_stats_label.text = "0 / 0 strings"
 		return
-	var _pct := 100.0 * float(_done) / float(_total)
-	progress_stats_label.text = "%d / %d strings (%.1f%%)" % [_done, _total, _pct]
+	var pct := 100.0 * float(done) / float(total)
+	progress_stats_label.text = "%d / %d strings (%.1f%%)" % [done, total, pct]
 
 # ---------------------------------------------------------------------------
 # Bloque 2: validador de tags y "needs review"
@@ -814,24 +814,24 @@ func update_progress_stats_label() -> void:
 func update_tag_validator_label() -> void:
 	if tag_validator_label == null:
 		return
-	var _stri := _get_current_string_container()
-	if _stri == null:
+	var stri := _get_current_string_container()
+	if stri == null:
 		tag_validator_label.text = ""
 		tag_validator_label.tooltip_text = ""
 		return
-	var _diff := ITagValidator.validate_string(_stri)
+	var diff := ITagValidator.validate_string(stri)
 	# Bloque 2: si NI el original NI la traducción contienen tags, el panel
 	# se queda vacío. Mostrar "✓ Tags OK" en cada línea de texto plano sólo
 	# añade ruido visual sin informar de nada útil. El panel sólo aparece
 	# cuando hay algo que validar (o cuando el usuario rompió la simetría
 	# añadiendo tags donde no había).
-	if not _diff.has_any_tag:
+	if not diff.has_any_tag:
 		tag_validator_label.text = ""
 		tag_validator_label.tooltip_text = ""
 		return
-	tag_validator_label.text = _diff.to_label_text()
+	tag_validator_label.text = diff.to_label_text()
 	# Color sobrio: verde apagado si OK, ámbar si hay mismatch.
-	if _diff.ok:
+	if diff.ok:
 		tag_validator_label.add_theme_color_override(&"font_color", Color(0.55, 0.85, 0.55))
 		tag_validator_label.tooltip_text = "Tag count matches the original."
 	else:
@@ -841,21 +841,21 @@ func update_tag_validator_label() -> void:
 func update_closed_sign_validator_label() -> void:
 	if closed_sign_validator_label == null:
 		return
-	var _stri := _get_current_string_container()
+	var stri := _get_current_string_container()
 
-	if _stri == null:
+	if stri == null:
 		closed_sign_validator_label.text = ""
 		closed_sign_validator_label.tooltip_text = ""
 		return
 
-	var _diff := IClosedSignValidator.validate_string(_stri)
-	if not _diff.has_any_sign:
+	var diff := IClosedSignValidator.validate_string(stri)
+	if not diff.has_any_sign:
 		closed_sign_validator_label.text = ""
 		closed_sign_validator_label.tooltip_text = ""
 		return
-	closed_sign_validator_label.text = _diff.to_label_text()
+	closed_sign_validator_label.text = diff.to_label_text()
 	# Color sobrio: verde apagado si OK, ámbar si hay mismatch.
-	if _diff.ok:
+	if diff.ok:
 		closed_sign_validator_label.add_theme_color_override(&"font_color", Color(0.55, 0.85, 0.55))
 		closed_sign_validator_label.tooltip_text = "Tag count matches the original."
 	else:
@@ -869,13 +869,13 @@ func update_closed_sign_validator_label() -> void:
 func update_needs_review_check() -> void:
 	if needs_review_check == null:
 		return
-	var _stri := _get_current_string_container()
-	if _stri == null:
+	var stri := _get_current_string_container()
+	if stri == null:
 		needs_review_check.set_pressed_no_signal(false)
 		needs_review_check.disabled = true
 		return
 	needs_review_check.disabled = false
-	needs_review_check.set_pressed_no_signal(_stri.needs_review)
+	needs_review_check.set_pressed_no_signal(stri.needs_review)
 
 # Devuelve el IStringContainer actualmente cargado en el editor, o null.
 # Bug fix (decoupling): leía dialogue_selector + string_selector, lo que daba
@@ -887,18 +887,18 @@ func _get_current_string_container() -> IStringContainer:
 		return null
 	if not Handle.strings.has(current_entry):
 		return null
-	var _arr: Array = Handle.strings[current_entry]
-	if current_string_index >= _arr.size():
+	var arr: Array = Handle.strings[current_entry]
+	if current_string_index >= arr.size():
 		return null
-	return _arr[current_string_index]
+	return arr[current_string_index]
 
-func _on_needs_review_toggled(_pressed: bool) -> void:
-	var _stri := _get_current_string_container()
-	if _stri == null:
+func _on_needs_review_toggled(pressed: bool) -> void:
+	var stri := _get_current_string_container()
+	if stri == null:
 		return
-	if _stri.needs_review == _pressed:
+	if stri.needs_review == pressed:
 		return  # Ya estaba en ese estado (sync programático).
-	_stri.needs_review = _pressed
+	stri.needs_review = pressed
 	Handle.is_modified = true
 	# Refrescar el ítem actual del string_selector y el de la entry.
 	# Bug fix (decoupling): leemos current_entry/current_string_index, que es
@@ -907,25 +907,25 @@ func _on_needs_review_toggled(_pressed: bool) -> void:
 	# entry; refresh_string_item_prefix sí actualiza porque string_selector
 	# siempre refleja current_entry.
 	if current_string_index >= 0:
-		refresh_string_item_prefix(current_string_index, _stri)
+		refresh_string_item_prefix(current_string_index, stri)
 	if current_entry != "":
 		refresh_entry_item_prefix(current_entry)
 
 # Título de la ventana: "archivo.txt* — Dialogue Helper".
 # El asterisco aparece cuando hay cambios sin guardar.
 func update_window_title() -> void:
-	var _base: String = "Dialogue Helper"
-	var _fname: String = "Untitled"
+	var base: String = "Dialogue Helper"
+	var flocal_name: String = "Untitled"
 	if Handle.current_file_path != "":
-		_fname = Handle.current_file_path.get_file()
-	var _mod: String = "*" if Handle.is_modified else ""
-	tree.root.title = "%s%s — %s" % [_fname, _mod, _base]
+		flocal_name = Handle.current_file_path.get_file()
+	var mod: String = "*" if Handle.is_modified else ""
+	tree.root.title = "%s%s — %s" % [flocal_name, mod, base]
 
 # ---------------------------------------------------------------------------
 # QoL: flujos reutilizables para File (los llama tanto el menú como los atajos)
 # ---------------------------------------------------------------------------
 
-func _on_files_dropped(_files: PackedStringArray) -> void:
+func _on_files_dropped(files: PackedStringArray) -> void:
 	# Bug fix: el resto de flujos de carga (open_file_flow, _on_recent_selected,
 	# atajos de teclado) pasan por _io_busy() para no pisar un save/load en
 	# curso. El drop de archivo no lo hacía: si el usuario soltaba un .txt
@@ -933,22 +933,22 @@ func _on_files_dropped(_files: PackedStringArray) -> void:
 	# last_thread y el viejo nunca se unía.
 	if _io_busy():
 		return
-	if _files.size() != 1 or not _files.get(0).ends_with(".txt"):
+	if files.size() != 1 or not files.get(0).ends_with(".txt"):
 		return
-	var _path: String = _files.get(0)
-	var _do_load := func() -> void:
-		_launch_load_thread(_path)
+	var path: String = files.get(0)
+	var do_load := func() -> void:
+		_launch_load_thread(path)
 	if Handle.is_modified:
 		Handle.uc_window = Handle.uc_scene.instantiate()
-		Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(_do_load))
+		Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(do_load))
 		add_child(Handle.uc_window)
 	else:
-		_do_load.call()
+		do_load.call()
 
 func open_file_flow() -> void:
 	if _io_busy():
 		return
-	var _do_open := func() -> void:
+	var do_open := func() -> void:
 		if FileAccess.file_exists("user://enable_git.bool"):
 			_launch_load_thread("user://repo/Strings.txt")
 		else:
@@ -972,10 +972,10 @@ func open_file_flow() -> void:
 			Handle.fd_window.show()
 	if Handle.is_modified:
 		Handle.uc_window = Handle.uc_scene.instantiate()
-		Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(_do_open))
+		Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(do_open))
 		add_child(Handle.uc_window)
 	else:
-		_do_open.call()
+		do_open.call()
 
 # Limpieza diferida del FileDialog de Open. Patrón equivalente al de
 # _launch_load_thread pero pensado para cancelaciones: capturamos el nodo en
@@ -983,31 +983,31 @@ func open_file_flow() -> void:
 # después hacemos queue_free. Así Godot ya ha terminado de devolver el foco
 # a la ventana principal cuando el FileDialog desaparece.
 func _close_fd_window_deferred() -> void:
-	var _w: FileDialog = Handle.fd_window
+	var w: FileDialog = Handle.fd_window
 	Handle.fd_window = null
-	if not is_instance_valid(_w):
+	if not is_instance_valid(w):
 		return
-	var _t := create_tween()
-	_t.tween_callback(func() -> void:
-		if is_instance_valid(_w):
-			_w.queue_free()
+	var t := create_tween()
+	t.tween_callback(func() -> void:
+		if is_instance_valid(w):
+			w.queue_free()
 	).set_delay(1.0 / 60.0)
-	_t.play()
+	t.play()
 
-func _launch_load_thread(_path: String) -> void:
+func _launch_load_thread(path: String) -> void:
 	# A reference CSV belongs to the currently opened .txt only. Opening another
 	# file should start with a clean reference panel.
 	clear_reference_csv()
-	var _t := create_tween()
-	_t.tween_callback(func() -> void:
+	var t := create_tween()
+	t.tween_callback(func() -> void:
 		if Handle.fd_window != null:
 			Handle.fd_window.free()
 			Handle.fd_window = null
 		Handle.loading_window = Handle.loading_scene.instantiate()
 		add_child(Handle.loading_window)
-		last_thread = IFileHandler.load_file(_path)
+		last_thread = IFileHandler.load_file(path)
 	).set_delay(1.0 / 60.0)
-	_t.play()
+	t.play()
 
 # Ctrl+S: si ya hay una ruta conocida y el archivo existe, guarda directo.
 # En caso contrario, se comporta como Save As.
@@ -1050,20 +1050,20 @@ func _open_save_dialog() -> void:
 # Limpieza diferida del FileDialog de Save. Mismo patrón que
 # _close_fd_window_deferred (ver explicación allí).
 func _close_fds_window_deferred() -> void:
-	var _w: FileDialog = Handle.fds_window
+	var w: FileDialog = Handle.fds_window
 	Handle.fds_window = null
-	if not is_instance_valid(_w):
+	if not is_instance_valid(w):
 		return
-	var _t := create_tween()
-	_t.tween_callback(func() -> void:
-		if is_instance_valid(_w):
-			_w.queue_free()
+	var t := create_tween()
+	t.tween_callback(func() -> void:
+		if is_instance_valid(w):
+			w.queue_free()
 	).set_delay(1.0 / 60.0)
-	_t.play()
+	t.play()
 
-func _launch_save_thread(_path: String) -> void:
-	var _t := create_tween()
-	_t.tween_callback(func() -> void:
+func _launch_save_thread(path: String) -> void:
+	var t := create_tween()
+	t.tween_callback(func() -> void:
 		if Handle.fds_window != null:
 			Handle.fds_window.free()
 			Handle.fds_window = null
@@ -1071,9 +1071,9 @@ func _launch_save_thread(_path: String) -> void:
 		add_child(Handle.saving_window)
 		# save_file ya no devuelve Thread; el seguimiento se hace vía
 		# IFileHandler.io_in_progress, consultado por _io_busy().
-		IFileHandler.save_file(_path)
+		IFileHandler.save_file(path)
 	).set_delay(1.0 / 60.0)
-	_t.play()
+	t.play()
 
 func new_file_flow() -> void:
 	if _io_busy():
@@ -1120,89 +1120,89 @@ const _RECENT_CLEAR_ID: int = 99
 func _load_recent_files() -> Array:
 	if not FileAccess.file_exists(_RECENT_FILES_PATH):
 		return []
-	var _txt := FileAccess.get_file_as_string(_RECENT_FILES_PATH)
-	var _parsed: Variant = JSON.parse_string(_txt)
-	if _parsed is Array:
-		var _result: Array = []
-		for _v: Variant in (_parsed as Array):
-			if _v is String and (_v as String) != "":
-				_result.append(_v)
-				if _result.size() >= _RECENT_FILES_MAX:
+	var txt := FileAccess.get_file_as_string(_RECENT_FILES_PATH)
+	var parsed: Variant = JSON.parse_string(txt)
+	if parsed is Array:
+		var result: Array = []
+		for v: Variant in (parsed as Array):
+			if v is String and (v as String) != "":
+				result.append(v)
+				if result.size() >= _RECENT_FILES_MAX:
 					break
-		return _result
+		return result
 	return []
 
-func _save_recent_files(_list: Array) -> void:
-	var _f := FileAccess.open(_RECENT_FILES_PATH, FileAccess.WRITE)
-	if _f == null:
+func _save_recent_files(list: Array) -> void:
+	var f := FileAccess.open(_RECENT_FILES_PATH, FileAccess.WRITE)
+	if f == null:
 		return
-	_f.store_string(JSON.stringify(_list))
-	_f.flush()
-	_f.close()
+	f.store_string(JSON.stringify(list))
+	f.flush()
+	f.close()
 
 # Añade una ruta al principio de la lista (deduplica) y persiste. Llamada
 # por load_file_data tras un open exitoso y por el flujo de save tras
 # guardar. Manteniendo "exitoso" como única condición evita rutas inválidas.
-func push_recent_file(_path: String) -> void:
-	if _path == "" or _path.begins_with("user://"):
+func push_recent_file(path: String) -> void:
+	if path == "" or path.begins_with("user://"):
 		# No guardamos rutas internas (modo git escribe a user://repo/...).
 		return
-	var _list := _load_recent_files()
+	var list := _load_recent_files()
 	# Deduplicar (case-insensitive en Windows sería más correcto, pero el
 	# sistema de archivos del usuario lo arbitrará si abre dos veces).
-	_list.erase(_path)
-	_list.push_front(_path)
-	while _list.size() > _RECENT_FILES_MAX:
-		_list.pop_back()
-	_save_recent_files(_list)
+	list.erase(path)
+	list.push_front(path)
+	while list.size() > _RECENT_FILES_MAX:
+		list.pop_back()
+	_save_recent_files(list)
 
 func _rebuild_recent_submenu() -> void:
 	if recent_popup == null:
 		return
 	recent_popup.clear()
-	var _list := _load_recent_files()
-	if _list.is_empty():
+	var list := _load_recent_files()
+	if list.is_empty():
 		recent_popup.add_item("(no recent files)")
 		recent_popup.set_item_disabled(0, true)
 		return
-	var _i := 0
-	for _path: String in _list:
-		var _label: String = _path.get_file()
-		if not FileAccess.file_exists(_path):
-			_label += "  (missing)"
+	var i := 0
+	for path: String in list:
+		var label: String = path.get_file()
+		if not FileAccess.file_exists(path):
+			label += "  (missing)"
 		# Usamos el índice como id del item; la posición es estable durante
 		# la vida del popup (lo limpiamos antes de cada mostrar).
-		recent_popup.add_item(_label, _i)
-		recent_popup.set_item_tooltip(_i, _path)
-		_i += 1
+		recent_popup.add_item(label, i)
+		recent_popup.set_item_tooltip(i, path)
+		i += 1
 	recent_popup.add_separator()
 	recent_popup.add_item("Clear Recent Files", _RECENT_CLEAR_ID)
 
-func _on_recent_selected(_id: int) -> void:
-	if _id == _RECENT_CLEAR_ID:
+func _on_recent_selected(id: int) -> void:
+	if id == _RECENT_CLEAR_ID:
 		_save_recent_files([])
 		return
-	var _list := _load_recent_files()
-	if _id < 0 or _id >= _list.size():
+	var list := _load_recent_files()
+	if id < 0 or id >= list.size():
 		return
-	var _path: String = _list[_id]
-	if not FileAccess.file_exists(_path):
+	var path: String = list[id]
+	if not FileAccess.file_exists(path):
 		# La ruta ya no es válida: la sacamos de la lista y avisamos al usuario.
-		_list.remove_at(_id)
-		_save_recent_files(_list)
-		_show_load_error("File no longer exists:\n%s\n\nIt has been removed from the recent list." % _path)
+		list.remove_at(id)
+		_save_recent_files(list)
+		_show_load_error("File no longer exists:\n%s\n\nIt has been removed from the recent list." % path)
 		return
 	# Mismo flujo que un Open File normal, respetando "unsaved changes".
 	if _io_busy():
 		return
-	var _do_load := func() -> void:
-		_launch_load_thread(_path)
+	var do_load := func() -> void:
+		_launch_load_thread(path)
 	if Handle.is_modified:
 		Handle.uc_window = Handle.uc_scene.instantiate()
-		Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(_do_load))
+		Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(do_load))
 		add_child(Handle.uc_window)
 	else:
-		_do_load.call()
+		do_load.call()
 
 # ---------------------------------------------------------------------------
 # Bloque 1: errores y advertencias al cargar archivo
@@ -1213,17 +1213,17 @@ func _on_recent_selected(_id: int) -> void:
 # Reusamos la ventana StyleError porque ya está montada con un TextEdit
 # scrollable y queue_free al cerrar — basta con cambiar el título y el texto.
 
-func _show_load_error(_msg: String) -> void:
-	var _w := Handle.se_scene.instantiate() as Window
-	_w.title = "Error loading file"
-	(_w.get_node(^"TextEdit") as TextEdit).text = _msg
-	add_child(_w)
+func _show_load_error(msg: String) -> void:
+	var w := Handle.se_scene.instantiate() as Window
+	w.title = "Error loading file"
+	(w.get_node(^"TextEdit") as TextEdit).text = msg
+	add_child(w)
 
-func _show_load_warning(_msg: String) -> void:
-	var _w := Handle.se_scene.instantiate() as Window
-	_w.title = "File loaded with warnings"
-	(_w.get_node(^"TextEdit") as TextEdit).text = _msg
-	add_child(_w)
+func _show_load_warning(msg: String) -> void:
+	var w := Handle.se_scene.instantiate() as Window
+	w.title = "File loaded with warnings"
+	(w.get_node(^"TextEdit") as TextEdit).text = msg
+	add_child(w)
 
 # ---------------------------------------------------------------------------
 # Export to JSON (File menu → id 12)
@@ -1242,69 +1242,69 @@ func _show_load_warning(_msg: String) -> void:
 func export_to_json_flow() -> void:
 	if _io_busy():
 		return
-	var _dlg := FileDialog.new()
-	_dlg.file_mode = FileDialog.FILE_MODE_SAVE_FILE
-	_dlg.access = FileDialog.ACCESS_FILESYSTEM
-	_dlg.use_native_dialog = true
-	_dlg.show_hidden_files = true
-	_dlg.add_filter("*.json", "JSON File")
+	var dlg := FileDialog.new()
+	dlg.file_mode = FileDialog.FILE_MODE_SAVE_FILE
+	dlg.access = FileDialog.ACCESS_FILESYSTEM
+	dlg.use_native_dialog = true
+	dlg.show_hidden_files = true
+	dlg.add_filter("*.json", "JSON File")
 	# Pre-rellenar carpeta y nombre: misma carpeta que el .txt, mismo nombre
 	# base con extensión .json.
 	if Handle.current_file_path != "":
-		_dlg.current_dir = Handle.current_file_path.get_base_dir()
-		_dlg.current_file = Handle.current_file_path.get_file().get_basename() + ".json"
+		dlg.current_dir = Handle.current_file_path.get_base_dir()
+		dlg.current_file = Handle.current_file_path.get_file().get_basename() + ".json"
 	else:
-		_dlg.current_file = "export.json"
-	_fdj_window = _dlg
-	_dlg.file_selected.connect(func(_p: String) -> void:
+		dlg.current_file = "export.json"
+	_fdj_window = dlg
+	dlg.file_selected.connect(func(p: String) -> void:
 		_close_fdj_window_deferred()
-		_do_export_json(_p)
+		_do_export_json(p)
 	)
-	_dlg.close_requested.connect(_close_fdj_window_deferred)
-	_dlg.canceled.connect(_close_fdj_window_deferred)
-	add_child(_dlg)
-	_dlg.show()
+	dlg.close_requested.connect(_close_fdj_window_deferred)
+	dlg.canceled.connect(_close_fdj_window_deferred)
+	add_child(dlg)
+	dlg.show()
 
 # Limpieza diferida del FileDialog de Export JSON. Mismo patrón que
 # _close_fd_window_deferred (ver explicación allí).
 func _close_fdj_window_deferred() -> void:
-	var _w: FileDialog = _fdj_window
+	var w: FileDialog = _fdj_window
 	_fdj_window = null
-	if not is_instance_valid(_w):
+	if not is_instance_valid(w):
 		return
-	var _t := create_tween()
-	_t.tween_callback(func() -> void:
-		if is_instance_valid(_w):
-			_w.queue_free()
+	var t := create_tween()
+	t.tween_callback(func() -> void:
+		if is_instance_valid(w):
+			w.queue_free()
 	).set_delay(1.0 / 60.0)
-	_t.play()
+	t.play()
 
 # Construye el dict {clave: valor} y lo escribe como JSON indentado.
 # Itera Handle.entry_names para respetar el orden de inserción del .txt.
 # Salta las strings con clave vacía (no deben aparecer en el JSON).
-func _do_export_json(_path: String) -> void:
-	var _dict := {}
+func _do_export_json(path: String) -> void:
+	var dict := {}
 	for _entry: String in Handle.entry_names:
 		if not Handle.strings.has(_entry):
 			continue
-		for _stri: IStringContainer in (Handle.strings[_entry] as Array):
-			if _stri.clave == "":
+		for stri: IStringContainer in (Handle.strings[_entry] as Array):
+			if stri.clave == "":
 				continue
 			# Convención "null": la cadena literal "null" se exporta como JSON null
 			# para que el round-trip sea idempotente con txt_a_json() de Python.
-			if _stri.content == "null":
-				_dict[_stri.clave] = null
+			if stri.content == "null":
+				dict[stri.clave] = null
 			else:
-				_dict[_stri.clave] = _stri.content
-	var _json_str: String = JSON.stringify(_dict, "\t")
-	var _f := FileAccess.open(_path, FileAccess.WRITE)
-	if _f == null:
+				dict[stri.clave] = stri.content
+	var json_str: String = JSON.stringify(dict, "\t")
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
 		_show_load_error("Could not write JSON file:\n%s\n\nError code: %d" % [
-			_path, FileAccess.get_open_error()])
+			path, FileAccess.get_open_error()])
 		return
-	_f.store_string(_json_str)
-	_f.flush()
-	_f.close()
+	f.store_string(json_str)
+	f.flush()
+	f.close()
 
 # ---------------------------------------------------------------------------
 # Bloque 3: Autosave y recuperación
@@ -1361,8 +1361,8 @@ func _ready_autosave() -> void:
 	if not Handle.is_modified_changed.is_connected(_on_is_modified_changed):
 		Handle.is_modified_changed.connect(_on_is_modified_changed)
 
-func _on_is_modified_changed(_value: bool) -> void:
-	if _value:
+func _on_is_modified_changed(value: bool) -> void:
+	if value:
 		# Cambio: marcar pendiente y reiniciar el debounce (start()
 		# resetea el contador si ya estaba corriendo).
 		_autosave_pending = true
@@ -1400,38 +1400,38 @@ func _perform_autosave() -> void:
 	if not _autosave_pending:
 		return
 
-	var _payload_arr := IFileHandler._build_save_payload()
-	var _payload: String = "\n".join(PackedStringArray(_payload_arr))
+	var payload_arr := IFileHandler._build_save_payload()
+	var payload: String = "\n".join(PackedStringArray(payload_arr))
 
-	# Escritura atómica: tmp + rename. Si fallamos en cualquier paso,
+	# Escritura atómica: tmp + relocal_name. Si fallamos en cualquier paso,
 	# salimos sin tocar el autosave previo (si lo había).
-	var _tmp := _AUTOSAVE_PATH + ".tmp"
-	var _f := FileAccess.open(_tmp, FileAccess.WRITE)
-	if _f == null:
+	var tmp := _AUTOSAVE_PATH + ".tmp"
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
+	if f == null:
 		return
-	_f.store_string(_payload)
-	_f.flush()
-	_f.close()
-	if DirAccess.rename_absolute(_tmp, _AUTOSAVE_PATH) != OK:
-		# Si el rename falla, el .tmp queda huérfano; lo limpiamos para
+	f.store_string(payload)
+	f.flush()
+	f.close()
+	if DirAccess.rename_absolute(tmp, _AUTOSAVE_PATH) != OK:
+		# Si el relocal_name falla, el .tmp queda huérfano; lo limpiamos para
 		# no dejar basura en user://.
-		if FileAccess.file_exists(_tmp):
-			DirAccess.remove_absolute(_tmp)
+		if FileAccess.file_exists(tmp):
+			DirAccess.remove_absolute(tmp)
 		return
 
 	# Meta: ruta original + timestamp del propio autosave. La ruta
 	# vacía indica un archivo nuevo (sin guardar nunca); en ese caso,
 	# tras Recover, el usuario tendrá que hacer Save As.
-	var _meta := {
+	var meta := {
 		"original_path": Handle.current_file_path,
 		"timestamp": int(Time.get_unix_time_from_system()),
 		"app_version": "DialogueHelper",
 	}
-	var _mf := FileAccess.open(_AUTOSAVE_META_PATH, FileAccess.WRITE)
-	if _mf != null:
-		_mf.store_string(JSON.stringify(_meta))
-		_mf.flush()
-		_mf.close()
+	var mf := FileAccess.open(_AUTOSAVE_META_PATH, FileAccess.WRITE)
+	if mf != null:
+		mf.store_string(JSON.stringify(meta))
+		mf.flush()
+		mf.close()
 
 	# Volcado completo: ya no hay nada pendiente hasta el siguiente cambio.
 	# OJO: NO ponemos Handle.is_modified=false; el usuario sigue viendo
@@ -1459,9 +1459,9 @@ func _discard_autosave_files() -> void:
 #
 # Uso: en lugar de `Handle.uc_window.callback.connect(my_action)`, ahora
 # se conecta `Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(my_action))`.
-func _on_unsaved_changes_confirmed(_action: Callable) -> void:
+func _on_unsaved_changes_confirmed(action: Callable) -> void:
 	_discard_autosave_files()
-	_action.call()
+	action.call()
 
 # Detección al arrancar. Si hay un autosave en disco, mostramos el diálogo.
 # Llamado desde _ready DESPUÉS de cargar el style y antes de que el usuario
@@ -1470,35 +1470,35 @@ func _check_autosave_recovery() -> void:
 	if not FileAccess.file_exists(_AUTOSAVE_PATH):
 		return
 	# Leer meta si existe, para mostrar info útil en el diálogo.
-	var _original_path: String = ""
-	var _timestamp: int = 0
+	var original_path: String = ""
+	var timestamp: int = 0
 	if FileAccess.file_exists(_AUTOSAVE_META_PATH):
-		var _mf := FileAccess.get_file_as_string(_AUTOSAVE_META_PATH)
-		var _parsed: Variant = JSON.parse_string(_mf)
-		if _parsed is Dictionary:
-			var _d: Dictionary = _parsed
-			_original_path = str(_d.get("original_path", ""))
+		var mf := FileAccess.get_file_as_string(_AUTOSAVE_META_PATH)
+		var parsed: Variant = JSON.parse_string(mf)
+		if parsed is Dictionary:
+			var d: Dictionary = parsed
+			original_path = str(d.get("original_path", ""))
 			# Mismo patrón que con bool(): Dictionary.get() devuelve Variant
 			# y int() acepta Variant, pero el analyzer estricto se queja.
 			# `as int` es la forma idiomática y silencia el warning.
-			_timestamp = _d.get("timestamp", 0) as int
+			timestamp = d.get("timestamp", 0) as int
 
-	var _w: WRecoverAutosave = _RECOVER_AUTOSAVE_SCENE.instantiate()
+	var w: WRecoverAutosave = _RECOVER_AUTOSAVE_SCENE.instantiate()
 	# Mensaje: cuándo y de qué archivo. Si no hay timestamp, omitimos
 	# la fecha. Si el archivo es "untitled" (no guardado), lo decimos.
-	var _when: String = ""
-	if _timestamp > 0:
-		_when = "from " + Time.get_datetime_string_from_unix_time(_timestamp).replace("T", " ")
-	var _what: String = "Untitled (never saved)"
-	if _original_path != "":
-		_what = _original_path
-	var _msg := "An autosave from a previous session was found.\n\n"
-	_msg += "File: " + _what + "\n"
-	if _when != "":
-		_msg += "Date: " + _when + "\n"
-	_msg += "\nRecover this work, or discard it?"
-	_w.message = _msg
-	_w.recover_requested.connect(func() -> void:
+	var when: String = ""
+	if timestamp > 0:
+		when = "from " + Time.get_datetime_string_from_unix_time(timestamp).replace("T", " ")
+	var what: String = "Untitled (never saved)"
+	if original_path != "":
+		what = original_path
+	var msg := "An autosave from a previous session was found.\n\n"
+	msg += "File: " + what + "\n"
+	if when != "":
+		msg += "Date: " + when + "\n"
+	msg += "\nRecover this work, or discard it?"
+	w.message = msg
+	w.recover_requested.connect(func() -> void:
 		# Bug fix: el problema es una carrera entre `add_child(loading_window)`
 		# y la liberación de RecoverAutosave. El click en Recover dispara, en
 		# este orden, recover_requested.emit() (síncrono) y queue_free()
@@ -1509,19 +1509,19 @@ func _check_autosave_recovery() -> void:
 		# del loading_window choca con su exclusividad. La solución correcta
 		# es esperar a que RecoverAutosave salga del árbol de verdad usando
 		# su señal `tree_exited`. Solo entonces ejecutamos el recover.
-		_w.tree_exited.connect(func() -> void:
-			_recover_from_autosave(_original_path)
+		w.tree_exited.connect(func() -> void:
+			_recover_from_autosave(original_path)
 		, CONNECT_ONE_SHOT)
 	)
-	_w.discard_requested.connect(func() -> void:
+	w.discard_requested.connect(func() -> void:
 		_discard_autosave_files()
 	)
-	add_child(_w)
+	add_child(w)
 
 # Carga el contenido del autosave como si fuera el archivo original.
 # Restaura current_file_path desde el meta (vía _override_path en load_file)
 # y marca is_modified=true en el mismo commit, evitando races.
-func _recover_from_autosave(_original_path: String) -> void:
+func _recover_from_autosave(original_path: String) -> void:
 	if not FileAccess.file_exists(_AUTOSAVE_PATH):
 		return
 	# Bug fix: el flujo "normal" de carga (_launch_load_thread) hace dos cosas
@@ -1542,7 +1542,7 @@ func _recover_from_autosave(_original_path: String) -> void:
 	# que current_file_path acabe apuntando al archivo "real" (no al
 	# autosave) y para que is_modified quede en true (el contenido
 	# recuperado no se ha guardado aún a su archivo de destino).
-	last_thread = IFileHandler.load_file(_AUTOSAVE_PATH, _original_path, true)
+	last_thread = IFileHandler.load_file(_AUTOSAVE_PATH, original_path, true)
 
 # ---------------------------------------------------------------------------
 # Bloque 1: borrado de entries y strings
@@ -1559,14 +1559,14 @@ func delete_entry_flow() -> void:
 	# dialogue_selector (que puede estar desincronizada con un filtro).
 	if current_entry == "" or not Handle.strings.has(current_entry):
 		return
-	var _entry_name := current_entry
-	var _str_count: int = (Handle.strings[_entry_name] as Array).size()
-	var _w: WConfirmDelete = _CONFIRM_DELETE_SCENE.instantiate()
-	_w.message = "Delete entry \"%s\" and all of its %d string(s)?\n\nThis cannot be undone after saving." % [_entry_name, _str_count]
-	_w.confirmed.connect(func() -> void:
-		_perform_delete_entry(_entry_name)
+	var entry_local_name := current_entry
+	var str_count: int = (Handle.strings[entry_local_name] as Array).size()
+	var w: WConfirmDelete = _CONFIRM_DELETE_SCENE.instantiate()
+	w.message = "Delete entry \"%s\" and all of its %d string(s)?\n\nThis cannot be undone after saving." % [entry_local_name, str_count]
+	w.confirmed.connect(func() -> void:
+		_perform_delete_entry(entry_local_name)
 	)
-	add_child(_w)
+	add_child(w)
 
 func delete_string_flow() -> void:
 	if _io_busy():
@@ -1577,45 +1577,45 @@ func delete_string_flow() -> void:
 		return
 	if not Handle.strings.has(current_entry):
 		return
-	var _entry_name := current_entry
-	var _arr: Array = Handle.strings[_entry_name]
-	var _idx: int = current_string_index
-	if _idx >= _arr.size():
+	var entry_local_name := current_entry
+	var arr: Array = Handle.strings[entry_local_name]
+	var idx: int = current_string_index
+	if idx >= arr.size():
 		return
-	var _w: WConfirmDelete = _CONFIRM_DELETE_SCENE.instantiate()
+	var w: WConfirmDelete = _CONFIRM_DELETE_SCENE.instantiate()
 	# Mostramos un trozo del contenido para que el usuario vea qué va a borrar.
-	var _preview: String = (_arr[_idx] as IStringContainer).content
-	if _preview.length() > 80:
-		_preview = _preview.substr(0, 77) + "..."
-	_w.message = "Delete string %d of entry \"%s\"?\n\n\"%s\"\n\nThis cannot be undone after saving." % [_idx + 1, _entry_name, _preview]
-	_w.confirmed.connect(func() -> void:
-		_perform_delete_string(_entry_name, _idx)
+	var preview: String = (arr[idx] as IStringContainer).content
+	if preview.length() > 80:
+		preview = preview.substr(0, 77) + "..."
+	w.message = "Delete string %d of entry \"%s\"?\n\n\"%s\"\n\nThis cannot be undone after saving." % [idx + 1, entry_local_name, preview]
+	w.confirmed.connect(func() -> void:
+		_perform_delete_string(entry_local_name, idx)
 	)
-	add_child(_w)
+	add_child(w)
 
 # Borra una entry entera (todas sus strings). Limpia las estructuras globales
 # (string_table, string_ids, string_sstr...) que apuntan a las strings borradas.
-func _perform_delete_entry(_entry_name: String) -> void:
-	if not Handle.strings.has(_entry_name):
+func _perform_delete_entry(entry_local_name: String) -> void:
+	if not Handle.strings.has(entry_local_name):
 		return
-	var _doomed_arr: Array = Handle.strings[_entry_name]
-	var _doomed_ids := []
-	for _stri: IStringContainer in _doomed_arr:
-		_doomed_ids.append(_stri.id)
+	var doomed_arr: Array = Handle.strings[entry_local_name]
+	var doomed_ids := []
+	for stri: IStringContainer in doomed_arr:
+		doomed_ids.append(stri.id)
 
 	# Quitar de todas las estructuras globales.
-	for _id: int in _doomed_ids:
-		Handle.string_table.erase(_id)
-		Handle.string_ids.erase(_id)
-	_purge_ids_from_similar(_doomed_ids)
-	Handle.strings.erase(_entry_name)
-	Handle.entry_names.erase(_entry_name)
-	Handle.string_size = max(0, Handle.string_size - _doomed_ids.size())
+	for id: int in doomed_ids:
+		Handle.string_table.erase(id)
+		Handle.string_ids.erase(id)
+	_purge_ids_from_similar(doomed_ids)
+	Handle.strings.erase(entry_local_name)
+	Handle.entry_names.erase(entry_local_name)
+	Handle.string_size = max(0, Handle.string_size - doomed_ids.size())
 
 	# Quitar el item del dialogue_selector (sólo el que coincida en nombre real).
-	for _i in range(dialogue_selector.get_item_count()):
-		if dialogue_selector_entry_at(_i) == _entry_name:
-			dialogue_selector.remove_item(_i)
+	for i in range(dialogue_selector.get_item_count()):
+		if dialogue_selector_entry_at(i) == entry_local_name:
+			dialogue_selector.remove_item(i)
 			break
 
 	# Si la entry borrada era la que estaba cargada en el editor, limpiamos
@@ -1623,8 +1623,8 @@ func _perform_delete_entry(_entry_name: String) -> void:
 	# fuente de verdad. El siguiente item del dialogue_selector (si existe)
 	# se selecciona como conveniencia y `_on_item_list_item_selected` →
 	# `change_to` reasignará current_entry/current_string_index.
-	var _was_current := (_entry_name == current_entry)
-	if _was_current:
+	var was_current := (entry_local_name == current_entry)
+	if was_current:
 		_set_loaded("", -1)
 	string_selector.clear()
 	similar_entries.clear()
@@ -1632,10 +1632,10 @@ func _perform_delete_entry(_entry_name: String) -> void:
 	original_dialogue.text = ""
 	Handle.og_str = ""
 	if dialogue_selector.get_item_count() > 0:
-		var _next: int = 0
-		dialogue_selector.select(_next)
+		var next: int = 0
+		dialogue_selector.select(next)
 		dialogue_selector.ensure_current_is_visible()
-		_on_item_list_item_selected(_next)
+		_on_item_list_item_selected(next)
 
 	Handle.is_modified = true
 	update_progress_stats_label()
@@ -1643,38 +1643,38 @@ func _perform_delete_entry(_entry_name: String) -> void:
 # Borra una string concreta dentro de una entry. Re-asigna `index` a las
 # strings posteriores en string_table (cada IStringTable guarda su posición
 # dentro de la entry, y borrar al medio desplaza las que vienen después).
-func _perform_delete_string(_entry_name: String, _idx: int) -> void:
-	if not Handle.strings.has(_entry_name):
+func _perform_delete_string(entry_local_name: String, idx: int) -> void:
+	if not Handle.strings.has(entry_local_name):
 		return
-	var _arr: Array = Handle.strings[_entry_name]
-	if _idx < 0 or _idx >= _arr.size():
+	var arr: Array = Handle.strings[entry_local_name]
+	if idx < 0 or idx >= arr.size():
 		return
-	var _doomed: IStringContainer = _arr[_idx]
-	var _doomed_id: int = _doomed.id
+	var doomed: IStringContainer = arr[idx]
+	var doomed_id: int = doomed.id
 
-	_arr.remove_at(_idx)
-	Handle.string_table.erase(_doomed_id)
-	Handle.string_ids.erase(_doomed_id)
-	_purge_ids_from_similar([_doomed_id])
+	arr.remove_at(idx)
+	Handle.string_table.erase(doomed_id)
+	Handle.string_ids.erase(doomed_id)
+	_purge_ids_from_similar([doomed_id])
 	Handle.string_size = max(0, Handle.string_size - 1)
 
 	# Las strings que estaban después en la misma entry tienen ahora un index
 	# menor. Hay que actualizar string_table para que sigan apuntando a la
 	# posición correcta dentro de la entry.
-	for _i in range(_idx, _arr.size()):
-		var _later: IStringContainer = _arr[_i]
-		if Handle.string_table.has(_later.id):
-			(Handle.string_table[_later.id] as IStringTable).index = _i
+	for i in range(idx, arr.size()):
+		var later: IStringContainer = arr[i]
+		if Handle.string_table.has(later.id):
+			(Handle.string_table[later.id] as IStringTable).index = i
 
 	# Refrescar el string_selector mostrando lo que queda. Sólo tiene sentido
 	# si la entry borrada es la cargada en el editor — string_selector siempre
 	# refleja current_entry. (Hoy delete_string_flow usa current_entry, así
 	# que esta condición siempre se cumple; la dejamos defensiva por si
 	# futuros flujos llaman a _perform_delete_string sobre otra entry.)
-	if _entry_name == current_entry:
+	if entry_local_name == current_entry:
 		string_selector.clear()
-		for _stri: IStringContainer in _arr:
-			string_selector.add_item(_string_progress_prefix(_stri) + _stri.content)
+		for stri: IStringContainer in arr:
+			string_selector.add_item(_string_progress_prefix(stri) + stri.content)
 
 	# Reseleccionar algo razonable: la siguiente string en la misma posición,
 	# o la última si borramos la última.
@@ -1682,46 +1682,46 @@ func _perform_delete_string(_entry_name: String, _idx: int) -> void:
 	# actualizamos current_string_index. Si el array quedó vacío, lo dejamos
 	# en -1 explícitamente; `_on_item_list_item_selected_str` no se llamaría
 	# (lista vacía) y current_string_index quedaría obsoleto.
-	if _arr.is_empty():
+	if arr.is_empty():
 		# Editor/similar_entries sólo se tocan si la entry borrada es la cargada.
-		if _entry_name == current_entry:
+		if entry_local_name == current_entry:
 			similar_entries.clear()
 			_set_dialogue_edit_text_silent("")
 			original_dialogue.text = ""
 			Handle.og_str = ""
 			_set_loaded(current_entry, -1)
 	else:
-		if _entry_name == current_entry:
-			var _new_idx: int = min(_idx, _arr.size() - 1)
-			string_selector.select(_new_idx)
+		if entry_local_name == current_entry:
+			var new_idx: int = min(idx, arr.size() - 1)
+			string_selector.select(new_idx)
 			string_selector.ensure_current_is_visible()
 			# _on_item_list_item_selected_str actualiza current_string_index.
-			_on_item_list_item_selected_str(_new_idx)
+			_on_item_list_item_selected_str(new_idx)
 
 	# La entry pudo cambiar de "✓" a "·" (si la borrada era la única no
 	# traducida) o de "·" a "∅" si era la última string de la entry.
-	refresh_entry_item_prefix(_entry_name)
+	refresh_entry_item_prefix(entry_local_name)
 	Handle.is_modified = true
 	update_progress_stats_label()
 
 # Helper interno: cuando borramos strings, hay que sacar sus IDs de las
 # listas `equal_strings` que comparten varias strings entre sí, y de los
 # diccionarios que las indexan.
-func _purge_ids_from_similar(_ids_to_remove: Array) -> void:
-	if _ids_to_remove.is_empty():
+func _purge_ids_from_similar(ids_to_remove: Array) -> void:
+	if ids_to_remove.is_empty():
 		return
-	var _id_set := {}
-	for _id: Variant in _ids_to_remove:
-		_id_set[_id] = true
+	var id_set := {}
+	for id: Variant in ids_to_remove:
+		id_set[id] = true
 	# Quitar de equal_strings de cada string que sigue viva. Cada array es
 	# compartido por todas las strings del grupo, así que basta con limpiar
 	# una vez por grupo (lo hacemos al recorrer string_sstr_arr abajo).
-	for _arr: Array in Handle.string_sstr_arr:
-		var _i := _arr.size() - 1
-		while _i >= 0:
-			if _id_set.has(_arr[_i]):
-				_arr.remove_at(_i)
-			_i -= 1
+	for arr: Array in Handle.string_sstr_arr:
+		var i := arr.size() - 1
+		while i >= 0:
+			if id_set.has(arr[i]):
+				arr.remove_at(i)
+			i -= 1
 	# Lo que NO hacemos a propósito (decisiones conscientes, no olvidos):
 	#   1) NO compactamos string_sstr_arr eliminando arrays vacíos. Si lo
 	#      hiciéramos, todos los `equal_strings_index` posteriores que
@@ -1751,13 +1751,13 @@ func _request_scale_save() -> void:
 	_scale_save_timer = tree.create_timer(0.5)
 	_scale_save_timer.timeout.connect(func() -> void:
 		_scale_save_timer = null
-		var _f := FileAccess.open("user://scale.txt", FileAccess.WRITE)
-		if _f == null:
+		var f := FileAccess.open("user://scale.txt", FileAccess.WRITE)
+		if f == null:
 			push_warning("Could not persist scale to user://scale.txt")
 			return
-		_f.store_string(str(Handle.visual_scale))
-		_f.flush()
-		_f.close()
+		f.store_string(str(Handle.visual_scale))
+		f.flush()
+		f.close()
 	)
 
 # ---------------------------------------------------------------------------
@@ -1778,21 +1778,21 @@ func _setup_reference_panel() -> void:
 	add_child(reference_panel)
 	reference_panel.move_to_front()
 
-	var _root := VBoxContainer.new()
-	_root.name = "Root"
-	_root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_root.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	reference_panel.add_child(_root)
+	var root := VBoxContainer.new()
+	root.name = "Root"
+	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	reference_panel.add_child(root)
 
-	var _header := HBoxContainer.new()
-	_header.name = "Header"
-	_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_root.add_child(_header)
+	var header := HBoxContainer.new()
+	header.name = "Header"
+	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.add_child(header)
 
-	var _title := Label.new()
-	_title.text = "Reference"
-	_title.tooltip_text = "Shows notes and draft Spanish references from a local CSV export."
-	_header.add_child(_title)
+	var title := Label.new()
+	title.text = "Reference"
+	title.tooltip_text = "Shows notes and draft Spanish references from a local CSV export."
+	header.add_child(title)
 
 	reference_status_label = Label.new()
 	reference_status_label.text = "No CSV"
@@ -1800,34 +1800,34 @@ func _setup_reference_panel() -> void:
 	reference_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	reference_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	reference_status_label.custom_minimum_size = Vector2(80.0, 0.0)
-	_header.add_child(reference_status_label)
+	header.add_child(reference_status_label)
 
 	reference_toggle_button = Button.new()
 	reference_toggle_button.text = "▴"
 	reference_toggle_button.tooltip_text = "Hide reference panel"
 	reference_toggle_button.focus_mode = Control.FOCUS_NONE
 	reference_toggle_button.pressed.connect(_toggle_reference_panel_collapsed)
-	_header.add_child(reference_toggle_button)
+	header.add_child(reference_toggle_button)
 
-	var _load_button := Button.new()
-	_load_button.text = "Load"
-	_load_button.tooltip_text = "Load reference CSV..."
-	_load_button.focus_mode = Control.FOCUS_NONE
-	_load_button.pressed.connect(load_reference_csv_flow)
-	_header.add_child(_load_button)
+	var load_button := Button.new()
+	load_button.text = "Load"
+	load_button.tooltip_text = "Load reference CSV..."
+	load_button.focus_mode = Control.FOCUS_NONE
+	load_button.pressed.connect(load_reference_csv_flow)
+	header.add_child(load_button)
 
-	var _clear_button := Button.new()
-	_clear_button.text = "×"
-	_clear_button.tooltip_text = "Clear reference CSV"
-	_clear_button.focus_mode = Control.FOCUS_NONE
-	_clear_button.pressed.connect(clear_reference_csv)
-	_header.add_child(_clear_button)
+	var clear_button := Button.new()
+	clear_button.text = "×"
+	clear_button.tooltip_text = "Clear reference CSV"
+	clear_button.focus_mode = Control.FOCUS_NONE
+	clear_button.pressed.connect(clear_reference_csv)
+	header.add_child(clear_button)
 
 	reference_body = HBoxContainer.new()
 	reference_body.name = "ReferenceBody"
 	reference_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	reference_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_root.add_child(reference_body)
+	root.add_child(reference_body)
 
 	reference_notes_edit = _make_reference_column("Notas", "No notes for this string.", 1.25)
 	reference_es_en_edit = _make_reference_column("ES ← EN", "No Spanish-from-English reference for this string.", 1.0)
@@ -1837,36 +1837,36 @@ func _setup_reference_panel() -> void:
 	_update_reference_panel_layout()
 	update_reference_panel()
 
-func _make_reference_column(_title: String, _placeholder: String, _ratio: float) -> TextEdit:
-	var _col := VBoxContainer.new()
-	_col.name = "ReferenceColumn%d" % reference_body.get_child_count()
-	_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_col.size_flags_stretch_ratio = _ratio
-	reference_body.add_child(_col)
+func _make_reference_column(title: String, placeholder: String, ratio: float) -> TextEdit:
+	var col := VBoxContainer.new()
+	col.name = "ReferenceColumn%d" % reference_body.get_child_count()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.size_flags_stretch_ratio = ratio
+	reference_body.add_child(col)
 
-	var _label := Label.new()
-	_label.text = _title
-	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_label.clip_text = true
-	_label.add_theme_font_size_override("font_size", _REFERENCE_PANEL_FONT_SIZE)
-	_col.add_child(_label)
+	var label := Label.new()
+	label.text = title
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.clip_text = true
+	label.add_theme_font_size_override("font_size", _REFERENCE_PANEL_FONT_SIZE)
+	col.add_child(label)
 
-	var _te := _make_reference_text_edit(_title, _placeholder)
-	_col.add_child(_te)
-	return _te
+	var te := _make_reference_text_edit(title, placeholder)
+	col.add_child(te)
+	return te
 
-func _make_reference_text_edit(_name: String, _placeholder: String) -> TextEdit:
-	var _te := TextEdit.new()
-	_te.name = _name
-	_te.editable = false
-	_te.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
-	_te.placeholder_text = _placeholder
-	_te.tooltip_text = "Reference only. This does not get saved to the .txt."
-	_te.add_theme_font_size_override("font_size", _REFERENCE_PANEL_FONT_SIZE)
-	_te.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_te.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	return _te
+func _make_reference_text_edit(local_name: String, placeholder: String) -> TextEdit:
+	var te := TextEdit.new()
+	te.name = local_name
+	te.editable = false
+	te.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	te.placeholder_text = placeholder
+	te.tooltip_text = "Reference only. This does not get saved to the .txt."
+	te.add_theme_font_size_override("font_size", _REFERENCE_PANEL_FONT_SIZE)
+	te.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	te.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	return te
 
 func _toggle_reference_panel_collapsed() -> void:
 	reference_panel_collapsed = not reference_panel_collapsed
@@ -1892,13 +1892,13 @@ func _update_reference_panel_layout() -> void:
 	# The first attempt placed it immediately above DialogueEdit, which made it
 	# overlap those controls at 1100×700. This anchors the bottom edge to the
 	# topmost editor-control row instead.
-	var _h: float = _REFERENCE_PANEL_COLLAPSED_H if reference_panel_collapsed else _REFERENCE_PANEL_EXPANDED_H
-	var _button_top: float = minf(add_entry.position.y, add_string.position.y)
-	var _controls_top: float = dialogue_edit.position.y + _button_top - _REFERENCE_PANEL_MARGIN
-	var _right_limit: float = float(tree.root.size.x) - (1100.0 - 879.0) - _REFERENCE_PANEL_MARGIN
-	var _w: float = minf(dialogue_edit.size.x, maxf(260.0, _right_limit - dialogue_edit.position.x))
-	reference_panel.position = Vector2(dialogue_edit.position.x, _controls_top - _h)
-	reference_panel.size = Vector2(_w, _h)
+	var h: float = _REFERENCE_PANEL_COLLAPSED_H if reference_panel_collapsed else _REFERENCE_PANEL_EXPANDED_H
+	var button_top: float = minf(add_entry.position.y, add_string.position.y)
+	var controls_top: float = dialogue_edit.position.y + button_top - _REFERENCE_PANEL_MARGIN
+	var right_limit: float = float(tree.root.size.x) - (1100.0 - 879.0) - _REFERENCE_PANEL_MARGIN
+	var w: float = minf(dialogue_edit.size.x, maxf(260.0, right_limit - dialogue_edit.position.x))
+	reference_panel.position = Vector2(dialogue_edit.position.x, controls_top - h)
+	reference_panel.size = Vector2(w, h)
 
 func load_reference_csv_flow() -> void:
 	if _reference_fd_window != null and is_instance_valid(_reference_fd_window):
@@ -1917,8 +1917,8 @@ func load_reference_csv_flow() -> void:
 		_reference_fd_window.current_path = reference_table.source_path
 	elif Handle.current_file_path != "":
 		_reference_fd_window.current_dir = Handle.current_file_path.get_base_dir()
-	_reference_fd_window.file_selected.connect(func(_path: String) -> void:
-		_load_reference_csv(_path)
+	_reference_fd_window.file_selected.connect(func(path: String) -> void:
+		_load_reference_csv(path)
 		_close_reference_fd_window_deferred()
 	)
 	_reference_fd_window.close_requested.connect(_close_reference_fd_window_deferred)
@@ -1927,22 +1927,22 @@ func load_reference_csv_flow() -> void:
 	_reference_fd_window.show()
 
 func _close_reference_fd_window_deferred() -> void:
-	var _w: FileDialog = _reference_fd_window
+	var w: FileDialog = _reference_fd_window
 	_reference_fd_window = null
-	if not is_instance_valid(_w):
+	if not is_instance_valid(w):
 		return
-	var _t := create_tween()
-	_t.tween_callback(func() -> void:
-		if is_instance_valid(_w):
-			_w.queue_free()
+	var t := create_tween()
+	t.tween_callback(func() -> void:
+		if is_instance_valid(w):
+			w.queue_free()
 	).set_delay(1.0 / 60.0)
-	_t.play()
+	t.play()
 
-func _load_reference_csv(_path: String) -> void:
+func _load_reference_csv(path: String) -> void:
 	# Reference CSVs are intentionally session/file scoped. They are useful while
 	# working on one file, but should not be restored automatically after closing
 	# the program or switching to another .txt.
-	if reference_table.load_from_csv(_path):
+	if reference_table.load_from_csv(path):
 		update_reference_panel()
 	else:
 		_show_reference_csv_error(reference_table.last_error)
@@ -1952,11 +1952,11 @@ func clear_reference_csv() -> void:
 	reference_table.clear()
 	update_reference_panel()
 
-func _show_reference_csv_error(_msg: String) -> void:
-	var _w := Handle.se_scene.instantiate() as Window
-	_w.title = "Reference CSV error"
-	(_w.get_node(^"TextEdit") as TextEdit).text = _msg
-	add_child(_w)
+func _show_reference_csv_error(msg: String) -> void:
+	var w := Handle.se_scene.instantiate() as Window
+	w.title = "Reference CSV error"
+	(w.get_node(^"TextEdit") as TextEdit).text = msg
+	add_child(w)
 
 func update_reference_panel() -> void:
 	if reference_panel == null:
@@ -1966,64 +1966,64 @@ func update_reference_panel() -> void:
 		reference_panel.tooltip_text = "No reference CSV loaded."
 		_set_reference_texts("", "", "")
 		return
-	var _clave := _get_current_clave()
-	if _clave == "":
+	var clave := _get_current_clave()
+	if clave == "":
 		reference_status_label.text = "%d refs · no Clave" % reference_table.loaded_count()
 		reference_panel.tooltip_text = "Reference CSV loaded, but the current string has no Clave."
 		_set_reference_texts("", "", "")
 		return
-	var _ref := reference_table.get_reference(_clave)
-	if _ref.is_empty():
+	var ref := reference_table.get_reference(clave)
+	if ref.is_empty():
 		reference_status_label.text = "%d refs · no match" % reference_table.loaded_count()
 		_set_reference_texts("", "", "")
-		reference_panel.tooltip_text = "No reference found for Clave:\n%s" % _clave
+		reference_panel.tooltip_text = "No reference found for Clave:\n%s" % clave
 		return
 	reference_status_label.text = "Match"
-	reference_panel.tooltip_text = "Reference found for Clave:\n%s\n\nCSV:\n%s" % [_clave, reference_table.source_path]
+	reference_panel.tooltip_text = "Reference found for Clave:\n%s\n\nCSV:\n%s" % [clave, reference_table.source_path]
 	_set_reference_texts(
-		str(_ref.get(ReferenceTable.FIELD_NOTES, "")),
-		str(_ref.get(ReferenceTable.FIELD_ES_FROM_EN, "")),
-		str(_ref.get(ReferenceTable.FIELD_ES_FROM_JP, ""))
+		str(ref.get(ReferenceTable.FIELD_NOTES, "")),
+		str(ref.get(ReferenceTable.FIELD_ES_FROM_EN, "")),
+		str(ref.get(ReferenceTable.FIELD_ES_FROM_JP, ""))
 	)
 
-func _set_reference_texts(_notes: String, _es_en: String, _es_jp: String) -> void:
-	_set_reference_column_text(reference_notes_edit, _notes)
-	_set_reference_column_text(reference_es_en_edit, _es_en)
-	_set_reference_column_text(reference_es_jp_edit, _es_jp)
+func _set_reference_texts(notes: String, es_en: String, es_jp: String) -> void:
+	_set_reference_column_text(reference_notes_edit, notes)
+	_set_reference_column_text(reference_es_en_edit, es_en)
+	_set_reference_column_text(reference_es_jp_edit, es_jp)
 
-func _set_reference_column_text(_edit: TextEdit, _text: String) -> void:
-	if _edit == null:
+func _set_reference_column_text(edit: TextEdit, text: String) -> void:
+	if edit == null:
 		return
-	var _clean_text: String = _text.strip_edges()
-	_edit.text = _clean_text
-	var _column: Control = _edit.get_parent() as Control
-	if _column != null:
+	var clean_text: String = text.strip_edges()
+	edit.text = clean_text
+	var column: Control = edit.get_parent() as Control
+	if column != null:
 		# Empty reference fields should not reserve space. If a row has no notes,
 		# for example, the two draft columns can use the whole panel width.
-		_column.visible = _clean_text != ""
+		column.visible = clean_text != ""
 
 # ID lejos del rango de IDs internos de TextEdit (Cut/Copy/Paste van por debajo de 30).
 const _MENU_ID_COPY_CLAVE := 1000
 
 func _setup_textedit_clave_menu(te: TextEdit) -> void:
-	var _menu: PopupMenu = te.get_menu()
-	_menu.add_separator()
-	_menu.add_item("Copy Clave name", _MENU_ID_COPY_CLAVE)
-	_menu.id_pressed.connect(_on_textedit_menu_id_pressed)
+	var menu: PopupMenu = te.get_menu()
+	menu.add_separator()
+	menu.add_item("Copy Clave local_name", _MENU_ID_COPY_CLAVE)
+	menu.id_pressed.connect(_on_textedit_menu_id_pressed)
 	# Habilitar / deshabilitar el ítem según haya o no Clave en la string activa.
-	_menu.about_to_popup.connect(func() -> void:
-		var _idx := _menu.get_item_index(_MENU_ID_COPY_CLAVE)
-		if _idx == -1:
+	menu.about_to_popup.connect(func() -> void:
+		var idx := menu.get_item_index(_MENU_ID_COPY_CLAVE)
+		if idx == -1:
 			return
-		_menu.set_item_disabled(_idx, _get_current_clave() == "")
+		menu.set_item_disabled(idx, _get_current_clave() == "")
 	)
 
 func _get_current_clave() -> String:
 	# Bug fix (decoupling): pasamos por la fuente de verdad.
-	var _stri := _get_current_string_container()
-	if _stri == null:
+	var stri := _get_current_string_container()
+	if stri == null:
 		return ""
-	return _stri.clave
+	return stri.clave
 
 # Helper para mantener el invariante de "qué está cargado en el editor".
 # change_to y _on_item_list_item_selected_str son los dos call sites
@@ -2031,9 +2031,9 @@ func _get_current_clave() -> String:
 # cargue algo debería pasar también por aquí. Así nadie puede olvidar
 # actualizar las dos variables a la vez y reintroducir el bug del
 # decoupling.
-func _set_loaded(_entry: String, _idx: int) -> void:
-	current_entry = _entry
-	current_string_index = _idx
+func _set_loaded(entry: String, idx: int) -> void:
+	current_entry = entry
+	current_string_index = idx
 	update_reference_panel()
 
 # Parsea referencias "EntryName:N" o "EntryName" tolerando que el nombre
@@ -2045,53 +2045,53 @@ func _set_loaded(_entry: String, _idx: int) -> void:
 # y _on_item_list_item_selected_similar; el split partía el nombre en el
 # primer `:` y rompía la navegación cuando la entry contenía `:` en su
 # nombre. Esto centraliza el parseo y lo hace robusto.
-func _parse_entry_ref(_text: String) -> Array:
-	var _parts := _text.rsplit(":", true, 1)
-	if _parts.size() == 2 and (_parts[1] as String).is_valid_int():
-		return [_parts[0], int(_parts[1])]
-	return [_text, 1]
+func _parse_entry_ref(text: String) -> Array:
+	var parts := text.rsplit(":", true, 1)
+	if parts.size() == 2 and (parts[1] as String).is_valid_int():
+		return [parts[0], int(parts[1])]
+	return [text, 1]
 
 func _on_textedit_menu_id_pressed(id: int) -> void:
 	if id == _MENU_ID_COPY_CLAVE:
-		var _clave := _get_current_clave()
-		if _clave != "":
-			DisplayServer.clipboard_set(_clave)
+		var clave := _get_current_clave()
+		if clave != "":
+			DisplayServer.clipboard_set(clave)
 
-func update_box(_i: int, _user_change: bool = true) -> void:
-	if _i >= Handle.box_data.size():
+func update_box(i: int, user_change: bool = true) -> void:
+	if i >= Handle.box_data.size():
 		return
-	current_box = _i
-	current_box_label.text = Handle.box_data[_i].name
-	current_box_node.value = _i + 1
-	box.current_box = _i
-	if _user_change:
+	current_box = i
+	current_box_label.text = Handle.box_data[i].name
+	current_box_node.value = i + 1
+	box.current_box = i
+	if user_change:
 		Handle.is_modified = true
 
-func update_font(_i: int, _user_change: bool = true) -> void:
-	if _i >= Handle.font_data.size():
+func update_font(i: int, user_change: bool = true) -> void:
+	if i >= Handle.font_data.size():
 		return
-	current_font_id = _i
-	Handle.current_font = _i
-	current_font_label.text = Handle.font_data[_i].name
-	current_font_node.value = _i + 1
+	current_font_id = i
+	Handle.current_font = i
+	current_font_label.text = Handle.font_data[i].name
+	current_font_node.value = i + 1
 	font = IFont.get_font(Handle.current_font)
-	if _user_change:
+	if user_change:
 		Handle.is_modified = true
 		box.handle.force_update = true
 
 # Devuelve true si el IStringContainer contiene etiquetas de retrato (\E, \F, \P, ...)
-func _string_has_portrait_tags(_stri: IStringContainer) -> bool:
-	if _stri == null:
+func _string_has_portrait_tags(stri: IStringContainer) -> bool:
+	if stri == null:
 		return false
 	var portrait_tags: Array[String] = ["\\E", "\\F", "\\P"]
 	# original_content y layer_strings están tipados (String y Array[String]),
 	# así que no pueden ser null — sólo string/array vacíos. No tiene sentido
 	# chequear null aquí.
-	if not _stri.original_content.is_empty():
+	if not stri.original_content.is_empty():
 		for t in portrait_tags:
-			if _stri.original_content.find(t) != -1:
+			if stri.original_content.find(t) != -1:
 				return true
-	for layer in _stri.layer_strings:
+	for layer in stri.layer_strings:
 		if typeof(layer) == TYPE_STRING:
 			for t in portrait_tags:
 				if (layer as String).find(t) != -1:
@@ -2118,8 +2118,8 @@ func _string_has_portrait_tags(_stri: IStringContainer) -> bool:
 const _AUTO_BOX_WITH_ASTERISK: int = 0   # Box1
 const _AUTO_BOX_WITHOUT_ASTERISK: int = 6 # Box7
 
-func _compute_auto_box(_stri: IStringContainer) -> int:
-	if _stri == null:
+func _compute_auto_box(stri: IStringContainer) -> int:
+	if stri == null:
 		return _AUTO_BOX_WITH_ASTERISK
 	# Salvaguarda: si el style cargado todavía no tiene Box7 (p. ej. el
 	# usuario abrió Deltarune sin haber añadido aún la Box7 prometida),
@@ -2128,31 +2128,31 @@ func _compute_auto_box(_stri: IStringContainer) -> int:
 	# tampoco muestre un número que no se puede pintar.
 	if Handle.box_data.size() <= _AUTO_BOX_WITHOUT_ASTERISK:
 		return _AUTO_BOX_WITH_ASTERISK
-	if _stri.original_content.find("*") != -1:
+	if stri.original_content.find("*") != -1:
 		return _AUTO_BOX_WITH_ASTERISK
-	if _stri.content.find("*") != -1:
+	if stri.content.find("*") != -1:
 		return _AUTO_BOX_WITH_ASTERISK
 	return _AUTO_BOX_WITHOUT_ASTERISK
 
 # Devuelve la caja que se debe MOSTRAR para una string. Si el usuario ha
 # escogido explícitamente algo distinto del valor por defecto (box_style != 0),
 # se respeta su elección. Si no, se aplica la regla del asterisco.
-func _resolve_box_style(_stri: IStringContainer) -> int:
-	if _stri == null:
+func _resolve_box_style(stri: IStringContainer) -> int:
+	if stri == null:
 		return 0
-	if _stri.box_style != 0:
-		return _stri.box_style
-	return _compute_auto_box(_stri)
+	if stri.box_style != 0:
+		return stri.box_style
+	return _compute_auto_box(stri)
 
-func _on_item_list_item_selected(_index: int) -> void:
-	var _item := dialogue_selector_entry_at(_index)
-	change_to(_item)
-	if Handle.strings.has(_item):
-		var _it: Array = Handle.strings[_item]
-		for _stri: IStringContainer in _it:
+func _on_item_list_item_selected(index: int) -> void:
+	var item := dialogue_selector_entry_at(index)
+	change_to(item)
+	if Handle.strings.has(item):
+		var it: Array = Handle.strings[item]
+		for stri: IStringContainer in it:
 			# Prefijo de progreso (Bloque 1): "✓ " si está traducida, "· " si no.
-			string_selector.add_item(_string_progress_prefix(_stri) + _stri.content)
-		if !_it.is_empty():
+			string_selector.add_item(_string_progress_prefix(stri) + stri.content)
+		if !it.is_empty():
 			string_selector.select(0)
 			string_selector.ensure_current_is_visible()
 			# Bloque 2 fix: select() no emite item_selected, así que el panel
@@ -2168,7 +2168,7 @@ func _on_item_list_item_selected(_index: int) -> void:
 			update_closed_sign_validator_label()
 			update_needs_review_check()
 
-func _on_item_list_item_selected_str(_index: int) -> void:
+func _on_item_list_item_selected_str(index: int) -> void:
 	# Bug fix (decoupling): usábamos `dialogue_selector.get_selected_items()[0]`
 	# para sacar el nombre de la entry, pero tras navegar a una entry filtrada
 	# por Search/GoTo/Similar, dialogue_selector podía estar vacío (la guarda
@@ -2180,19 +2180,19 @@ func _on_item_list_item_selected_str(_index: int) -> void:
 	# los handlers de edición sepan en qué string está el usuario.
 	if current_entry == "" or not Handle.strings.has(current_entry):
 		return
-	var _arr: Array = Handle.strings[current_entry]
-	if _index < 0 or _index >= _arr.size():
+	var arr: Array = Handle.strings[current_entry]
+	if index < 0 or index >= arr.size():
 		return
-	_set_loaded(current_entry, _index)
+	_set_loaded(current_entry, index)
 	current_layer = 0
 	current_layer_node.value = 1
 	similar_entries.clear()
-	var _stri: IStringContainer = _arr[_index]
+	var stri: IStringContainer = arr[index]
 	# Asignamos las cadenas de capas primero
-	Handle.layer_strings = _stri.layer_strings
+	Handle.layer_strings = stri.layer_strings
 
 	# Reiniciar por defecto la casilla "Portrait" al cambiar de línea (condicional para evitar parpadeos)
-	var new_has_portrait := _string_has_portrait_tags(_stri)
+	var new_has_portrait := _string_has_portrait_tags(stri)
 	if not (prev_has_portrait and new_has_portrait):
 		if box:
 			box.portrait_enabled = false
@@ -2201,23 +2201,23 @@ func _on_item_list_item_selected_str(_index: int) -> void:
 	prev_has_portrait = new_has_portrait
 
 	if box and box.handle:
-		if str(_stri.speaker) != "":
-			box.handle.global_env["speaker"] = str(_stri.speaker)
+		if str(stri.speaker) != "":
+			box.handle.global_env["speaker"] = str(stri.speaker)
 		else:
 			if box.handle.global_env.has("speaker"):
 				box.handle.global_env.erase("speaker")
-	Handle.layer_colors = _stri.layer_colors
-	Handle.og_str = _stri.original_content
-	var _t := create_tween()
-	_t.tween_callback(func() -> void:
-		current_font_node.set_value(_stri.font_style + 1)
+	Handle.layer_colors = stri.layer_colors
+	Handle.og_str = stri.original_content
+	var t := create_tween()
+	t.tween_callback(func() -> void:
+		current_font_node.set_value(stri.font_style + 1)
 		# Issue #3: en lugar de usar `_stri.box_style` directamente, pasamos
 		# por _resolve_box_style. Si la string tiene caja explícita
 		# (box_style != 0) se respeta; si no, aplicamos la regla del
 		# asterisco (Box1 con `*`, Box7 sin `*`).
-		current_box_node.set_value(_resolve_box_style(_stri) + 1)
+		current_box_node.set_value(_resolve_box_style(stri) + 1)
 	).set_delay(1.0 / 60.0)
-	_t.play()
+	t.play()
 	current_color_node.color = Handle.layer_colors[current_layer]
 	_set_dialogue_edit_text_silent(str(Handle.layer_strings[current_layer]))
 	dialogue_edit.clear_undo_history()
@@ -2231,10 +2231,10 @@ func _on_item_list_item_selected_str(_index: int) -> void:
 	last_sthread = Thread.new()
 	last_sthread.start(func() -> void:
 		similar_entries.call_deferred("clear")
-		for sstri in _stri.equal_strings:
-			if sstri != _stri.id:
-				var _r: IStringTable = Handle.string_table[sstri]
-				similar_entries.call_deferred("add_item", "%s:%s" % [_r.name, _r.index + 1])
+		for sstri in stri.equal_strings:
+			if sstri != stri.id:
+				var r: IStringTable = Handle.string_table[sstri]
+				similar_entries.call_deferred("add_item", "%s:%s" % [r.name, r.index + 1])
 	)
 
 func change_to(item: String, index: int = 0) -> void:
@@ -2249,14 +2249,14 @@ func change_to(item: String, index: int = 0) -> void:
 		current_layer = 0
 		current_layer_node.value = 1
 		string_selector.clear()
-		var _it: Array = Handle.strings[item]
-		if _it.size() > index and index >= 0:
+		var it: Array = Handle.strings[item]
+		if it.size() > index and index >= 0:
 			_set_loaded(item, index)
-			var _stri: IStringContainer = _it[index]
-			Handle.layer_strings = _stri.layer_strings
+			var stri: IStringContainer = it[index]
+			Handle.layer_strings = stri.layer_strings
 
 			# Reiniciar por defecto la casilla "Portrait" al cambiar de línea (condicional para evitar parpadeos)
-			var new_has_portrait := _string_has_portrait_tags(_stri)
+			var new_has_portrait := _string_has_portrait_tags(stri)
 			if not (prev_has_portrait and new_has_portrait):
 				if box:
 					box.portrait_enabled = false
@@ -2264,21 +2264,21 @@ func change_to(item: String, index: int = 0) -> void:
 					enable_portrait.button_pressed = false
 			prev_has_portrait = new_has_portrait
 
-			if str(_stri.speaker) != "":
-				box.handle.global_env["speaker"] = str(_stri.speaker)
+			if str(stri.speaker) != "":
+				box.handle.global_env["speaker"] = str(stri.speaker)
 			else:
 				if box.handle.global_env.has("speaker"):
 					box.handle.global_env.erase("speaker")
-			Handle.layer_colors = _stri.layer_colors
-			Handle.og_str = _stri.original_content
-			var _t := create_tween()
-			_t.tween_callback(func() -> void:
-				current_font_node.set_value(_stri.font_style + 1)
+			Handle.layer_colors = stri.layer_colors
+			Handle.og_str = stri.original_content
+			var t := create_tween()
+			t.tween_callback(func() -> void:
+				current_font_node.set_value(stri.font_style + 1)
 				# Issue #3: ver _on_item_list_item_selected_str para la
 				# explicación. Mismo razonamiento aquí.
-				current_box_node.set_value(_resolve_box_style(_stri) + 1)
+				current_box_node.set_value(_resolve_box_style(stri) + 1)
 			).set_delay(1.0 / 60.0)
-			_t.play()
+			t.play()
 			current_color_node.color = Handle.layer_colors[current_layer]
 			_set_dialogue_edit_text_silent(str(Handle.layer_strings[current_layer]))
 			dialogue_edit.clear_undo_history()
@@ -2287,8 +2287,8 @@ func change_to(item: String, index: int = 0) -> void:
 			last_sthread = Thread.new()
 			last_sthread.start(func() -> void:
 				similar_entries.call_deferred("clear")
-				for sstri in _stri.equal_strings: # String ID
-					if sstri != _stri.id:
+				for sstri in stri.equal_strings: # String ID
+					if sstri != stri.id:
 						var r: IStringTable = Handle.string_table[sstri]
 						similar_entries.call_deferred("add_item", "%s:%s" % [r.name, r.index + 1])
 			)
@@ -2304,13 +2304,13 @@ func change_to(item: String, index: int = 0) -> void:
 				similar_entries.call_deferred("clear")
 			)
 
-func _on_item_list_item_selected_similar(_index: int) -> void:
-	# Bug fix: parseo "name:N" robusto a `:` en el nombre (ver _parse_entry_ref).
-	var _ref: Array = _parse_entry_ref(similar_entries.get_item_text(_index))
-	var _item_name: String = _ref[0]
-	if Handle.strings.has(_item_name):
-		var _idx := (_ref[1] as int) - 1
-		change_to(_item_name, _idx)
+func _on_item_list_item_selected_similar(index: int) -> void:
+	# Bug fix: parseo "local_name:N" robusto a `:` en el nombre (ver _parse_entry_ref).
+	var ref: Array = _parse_entry_ref(similar_entries.get_item_text(index))
+	var item_local_name: String = ref[0]
+	if Handle.strings.has(item_local_name):
+		var idx := (ref[1] as int) - 1
+		change_to(item_local_name, idx)
 		similar_entries.deselect_all()
 		similar_entries.get_v_scroll_bar().value = 0
 		if last_sthread is Thread:
@@ -2318,20 +2318,20 @@ func _on_item_list_item_selected_similar(_index: int) -> void:
 		last_sthread = Thread.new()
 		last_sthread.start(func() -> void:
 			similar_entries.call_deferred("clear")
-			var _src: IStringContainer = Handle.strings[_item_name][_idx]
-			for sstri: int in _src.equal_strings: # String ID
-				if sstri != _src.id:
-					var _r: IStringTable = Handle.string_table[sstri]
-					similar_entries.call_deferred("add_item", "%s:%s" % [_r.name, _r.index + 1])
+			var src: IStringContainer = Handle.strings[item_local_name][idx]
+			for sstri: int in src.equal_strings: # String ID
+				if sstri != src.id:
+					var r: IStringTable = Handle.string_table[sstri]
+					similar_entries.call_deferred("add_item", "%s:%s" % [r.name, r.index + 1])
 		)
 		string_selector.clear()
-		for _stri: IStringContainer in Handle.strings[_item_name]:
-			string_selector.add_item(_string_progress_prefix(_stri) + str(_stri.layer_strings[0]))
-		string_selector.select(_idx)
+		for stri: IStringContainer in Handle.strings[item_local_name]:
+			string_selector.add_item(_string_progress_prefix(stri) + str(stri.layer_strings[0]))
+		string_selector.select(idx)
 		string_selector.ensure_current_is_visible()
-		for _i in range(dialogue_selector.get_item_count()):
-			if dialogue_selector_entry_at(_i) == _item_name:
-				dialogue_selector.select(_i)
+		for i in range(dialogue_selector.get_item_count()):
+			if dialogue_selector_entry_at(i) == item_local_name:
+				dialogue_selector.select(i)
 				dialogue_selector.ensure_current_is_visible()
 				break
 
@@ -2351,11 +2351,11 @@ func _on_dialogue_edit_text_changed() -> void:
 		return
 	if not Handle.strings.has(current_entry):
 		return
-	var _arr_curr: Array = Handle.strings[current_entry]
-	if current_string_index >= _arr_curr.size():
+	var arr_curr: Array = Handle.strings[current_entry]
+	if current_string_index >= arr_curr.size():
 		return
-	var _c := current_entry
-	var _ss_idx := current_string_index
+	var c := current_entry
+	var ss_idx := current_string_index
 	# Bug fix: hasta ahora `_entries_to_refresh_global` se usaba para dos
 	# decisiones a la vez —qué entries refrescar el prefijo (✓/·/⚠/★) y
 	# si refrescar las stats globales—, y se rellenaba SOLO cuando una
@@ -2369,8 +2369,8 @@ func _on_dialogue_edit_text_changed() -> void:
 	#   - _stats_count_changed: SOLO si alguna string pasó de no-traducida
 	#     a traducida (la única condición bajo la que el conteo X/Y de
 	#     stats globales cambia realmente).
-	var _entries_to_refresh: Dictionary = {}
-	var _stats_count_changed: bool = false
+	var entries_to_refresh: Dictionary = {}
+	var stats_count_changed: bool = false
 	if current_layer == 0:
 		# Bug fix: equal_strings YA contiene el ID propio (se construye así
 		# en IFileHandler.load_file y en AddString). Antes hacíamos
@@ -2378,56 +2378,56 @@ func _on_dialogue_edit_text_changed() -> void:
 		# el propio ID dos veces y el bucle de actualización procesaba la
 		# string actual dos pasadas idénticas. Idempotente, pero trabajo
 		# doble por cada tecla pulsada cuando replace_similar está activo.
-		var _own_id: int = (_arr_curr[_ss_idx] as IStringContainer).id
-		var _e: Array = ((_arr_curr[_ss_idx] as IStringContainer).equal_strings as Array).duplicate() if replace_similar.button_pressed else []
-		if not _e.has(_own_id):
-			_e.append(_own_id)
-		var _entry_table := {}
-		var _i := 0
-		for _g: IStringContainer in _arr_curr:
-			_entry_table[_g.id] = _i
-			_i += 1
+		var own_id: int = (arr_curr[ss_idx] as IStringContainer).id
+		var e: Array = ((arr_curr[ss_idx] as IStringContainer).equal_strings as Array).duplicate() if replace_similar.button_pressed else []
+		if not e.has(own_id):
+			e.append(own_id)
+		var entry_table := {}
+		var i := 0
+		for _g: IStringContainer in arr_curr:
+			entry_table[_g.id] = i
+			i += 1
 		Handle.is_modified = true
-		for _f: int in _e: # Update all strings first (before making the entry table), then change the visualization.
-			var _t: IStringTable = Handle.string_table[_f]
-			var _entr: IStringContainer = Handle.strings[_t.name][_t.index]
-			var _was_translated := Handle.is_string_translated(_entr)
-			_entr.last_edited.author = author
-			_entr.last_edited.timestamp = int(Time.get_unix_time_from_system())
-			_entr.content = dialogue_edit.text
-			_entr.layer_strings[0] = _entr.content
-			Handle.string_ids[_entr.id] = _entr.content # We need to update properly the String ID Dictionary
-			if _entry_table.has(_entr.id):
-				if _entry_table[_entr.id] == _t.index:
+		for f: int in e: # Update all strings first (before making the entry table), then change the visualization.
+			var t: IStringTable = Handle.string_table[f]
+			var entr: IStringContainer = Handle.strings[t.name][t.index]
+			var was_translated := Handle.is_string_translated(entr)
+			entr.last_edited.author = author
+			entr.last_edited.timestamp = int(Time.get_unix_time_from_system())
+			entr.content = dialogue_edit.text
+			entr.layer_strings[0] = entr.content
+			Handle.string_ids[entr.id] = entr.content # We need to update properly the String ID Dictionary
+			if entry_table.has(entr.id):
+				if entry_table[entr.id] == t.index:
 					# El item del string_selector también lleva el prefijo de progreso.
 					# Solo lo actualizamos si la entry de _entr coincide con la
 					# entry cargada — string_selector muestra current_entry.
-					if _t.name == _c:
-						string_selector.set_item_text(_t.index, _string_progress_prefix(_entr) + dialogue_edit.text)
+					if t.name == c:
+						string_selector.set_item_text(t.index, _string_progress_prefix(entr) + dialogue_edit.text)
 			# SIEMPRE marcamos la entry para refresh: el content cambió, lo
 			# que puede haber alterado el tag mismatch (⚠) aunque la string
 			# siguiera marcada como traducida.
-			_entries_to_refresh[_t.name] = true
-			if not _was_translated:
-				_stats_count_changed = true
+			entries_to_refresh[t.name] = true
+			if not was_translated:
+				stats_count_changed = true
 	else:
 		Handle.is_modified = true
-		var _f: IStringTable = Handle.string_table[(_arr_curr[_ss_idx] as IStringContainer).id]
-		var _entr: IStringContainer = Handle.strings[_f.name][_f.index]
-		var _was_translated := Handle.is_string_translated(_entr)
-		_entr.last_edited.author = author
-		_entr.last_edited.timestamp = int(Time.get_unix_time_from_system())
-		_entr.layer_strings[current_layer] = dialogue_edit.text
+		var f: IStringTable = Handle.string_table[(arr_curr[ss_idx] as IStringContainer).id]
+		var entr: IStringContainer = Handle.strings[f.name][f.index]
+		var was_translated := Handle.is_string_translated(entr)
+		entr.last_edited.author = author
+		entr.last_edited.timestamp = int(Time.get_unix_time_from_system())
+		entr.layer_strings[current_layer] = dialogue_edit.text
 		# Mismo criterio que en la rama de arriba: refresh de prefijo
 		# siempre, stats solo si cambió el conteo de traducidas.
-		_entries_to_refresh[_f.name] = true
-		if not _was_translated:
-			_stats_count_changed = true
+		entries_to_refresh[f.name] = true
+		if not was_translated:
+			stats_count_changed = true
 		# El string_selector muestra layer_strings[0]; al editar layer != 0
 		# no hace falta cambiar el texto del item, pero sí su prefijo. Solo
 		# si la string editada vive en la entry actualmente cargada.
-		if _f.name == _c:
-			refresh_string_item_prefix(_f.index, _entr)
+		if f.name == c:
+			refresh_string_item_prefix(f.index, entr)
 
 	# Refresco de UI. Coalescemos las partes caras en el Timer del debounce
 	# (refresh_entry_item_prefix corre regex por cada string traducida; con
@@ -2435,9 +2435,9 @@ func _on_dialogue_edit_text_changed() -> void:
 	# ya están escritos arriba, así que un save inmediato encuentra los
 	# valores correctos; lo único que tarda hasta _EDIT_REFRESH_DEBOUNCE_S
 	# en aplicarse es el repintado de prefijos y stats globales.
-	for _en: String in _entries_to_refresh.keys():
+	for _en: String in entries_to_refresh.keys():
 		_entries_to_refresh_pending[_en] = true
-	if _stats_count_changed:
+	if stats_count_changed:
 		_stats_count_changed_pending = true
 	if _edit_refresh_timer != null:
 		_edit_refresh_timer.start()
@@ -2448,8 +2448,8 @@ func _on_dialogue_edit_text_changed() -> void:
 	update_closed_sign_validator_label()
 
 # QoL: ahora delega a las funciones-flujo. Cada ID del menú mapea a una acción.
-func file_menu_selected(_id: int) -> void:
-	match _id:
+func file_menu_selected(id: int) -> void:
+	match id:
 		1:    # Open File
 			open_file_flow()
 		2:    # Save File
@@ -2494,10 +2494,10 @@ func clear_data() -> void:
 	Handle.string_sstr_arr.clear()
 	Handle.string_size = 0  # Fix #3: mantener consistente con string_table.
 
-	for _i in range(Handle.layer_colors.size()):
-		Handle.layer_colors[_i] = Color.WHITE
-	for _i in range(Handle.layer_strings.size()):
-		Handle.layer_strings[_i] = ""
+	for i in range(Handle.layer_colors.size()):
+		Handle.layer_colors[i] = Color.WHITE
+	for i in range(Handle.layer_strings.size()):
+		Handle.layer_strings[i] = ""
 	Handle.og_str = ""
 	original_dialogue.text = ""
 	_set_dialogue_edit_text_silent("")
@@ -2516,48 +2516,48 @@ func clear_data() -> void:
 	update_progress_stats_label()
 	update_reference_panel()
 
-func about_menu_selected(_id: int) -> void:
-	match _id:
+func about_menu_selected(id: int) -> void:
+	match id:
 		0: # Show String Info
 			Handle.show_info_window = Handle.show_info_scene.instantiate()
 			add_child(Handle.show_info_window)
 			Handle.show_info_window.close_requested.connect(func() -> void:
 				Handle.show_info_window.queue_free()
 			)
-			var _n: Label = Handle.show_info_window.get_node("Label")
-			var _n2: Label = Handle.show_info_window.get_node("Label2")
-			var _l: LineEdit = Handle.show_info_window.get_node("LineEdit")
-			var _l2: TextEdit = Handle.show_info_window.get_node("LineEdit2")
+			var n: Label = Handle.show_info_window.get_node("Label")
+			var n2: Label = Handle.show_info_window.get_node("Label2")
+			var l: LineEdit = Handle.show_info_window.get_node("LineEdit")
+			var l2: TextEdit = Handle.show_info_window.get_node("LineEdit2")
 			# Bug fix (decoupling): leemos de current_entry/current_string_index
 			# (la string realmente cargada en el editor) en lugar de la
 			# selección de las ItemList, que pueden estar desincronizadas.
-			var _stri_info := _get_current_string_container()
-			if _stri_info != null:
-				var _ename := current_entry
-				var _eindex := current_string_index
-				var _laste := _stri_info.last_edited
-				var _td := Time.get_datetime_dict_from_unix_time(_laste.timestamp + int((Time.get_time_zone_from_system().bias as int) * 60)) # Local timezone?
-				if _laste.author == "" || _laste.timestamp == -1:
-					_n2.text = "\n\n\nNo last edit was made."
+			var stri_info := _get_current_string_container()
+			if stri_info != null:
+				var elocal_name := current_entry
+				var eindex := current_string_index
+				var laste := stri_info.last_edited
+				var td := Time.get_datetime_dict_from_unix_time(laste.timestamp + int((Time.get_time_zone_from_system().bias as int) * 60)) # Local timezone?
+				if laste.author == "" || laste.timestamp == -1:
+					n2.text = "\n\n\nNo last edit was made."
 				else:
-					_n2.text = _n2.text \
-						.replace("AUTHOR_NAME", _laste.author) \
+					n2.text = n2.text \
+						.replace("AUTHOR_NAME", laste.author) \
 						.replace("TIMESTAMP", "{DAY}/{MONTH}/{YEAR} {HOUR}:{MINUTE}:{SECOND} {HFORMAT}".format({
-								"DAY": str(_td["day"]).pad_zeros(2),
-								"MONTH": str(_td["month"]).pad_zeros(2),
-								"YEAR": str(_td["year"]).pad_zeros(4),
-								"HOUR": str(12 if _td["hour"] == 0 else _td["hour"] if _td["hour"] < 13 else _td["hour"] - 12).pad_zeros(2),
-								"MINUTE": str(_td["minute"]).pad_zeros(2),
-								"SECOND": str(_td["second"]).pad_zeros(2),
-								"HFORMAT": "a.m." if _td["hour"] < 12 else "p.m",
+								"DAY": str(td["day"]).pad_zeros(2),
+								"MONTH": str(td["month"]).pad_zeros(2),
+								"YEAR": str(td["year"]).pad_zeros(4),
+								"HOUR": str(12 if td["hour"] == 0 else td["hour"] if td["hour"] < 13 else td["hour"] - 12).pad_zeros(2),
+								"MINUTE": str(td["minute"]).pad_zeros(2),
+								"SECOND": str(td["second"]).pad_zeros(2),
+								"HFORMAT": "a.m." if td["hour"] < 12 else "p.m",
 							}))
-				_l.text = "%s:%s" % [_ename, _eindex + 1]
-				_l2.text = _stri_info.original_content
+				l.text = "%s:%s" % [elocal_name, eindex + 1]
+				l2.text = stri_info.original_content
 			else:
-				_n.text = "But Nobody Came." if randi() % 50 == 0 else "But there was nothing to see."
-				_n2.hide()
-				_l.hide()
-				_l2.hide()
+				n.text = "But Nobody Came." if randi() % 50 == 0 else "But there was nothing to see."
+				n2.hide()
+				l.hide()
+				l2.hide()
 		1: # Set Author Details
 			Handle.author_window = Handle.author_scene.instantiate()
 			add_child(Handle.author_window)
@@ -2574,22 +2574,22 @@ func open_go_to_menu() -> void:
 	Handle.goto_window = Handle.goto_scene.instantiate()
 	add_child(Handle.goto_window)
 	(Handle.goto_window.get_node("GoTo/GoButton") as Button).pressed.connect(func() -> void:
-		var _te := (Handle.goto_window.get_node("GoTo/Str") as LineEdit).text
-		if _te.length() > 0:
-			# Bug fix: parseo "name:N" robusto a `:` en el nombre (ver _parse_entry_ref).
-			var _ref: Array = _parse_entry_ref(_te)
-			var _item_name: String = _ref[0]
-			var _idx_zero: int = (_ref[1] as int) - 1
-			if Handle.strings.has(_item_name):
-				change_to(_item_name, _idx_zero)
+		var te := (Handle.goto_window.get_node("GoTo/Str") as LineEdit).text
+		if te.length() > 0:
+			# Bug fix: parseo "local_name:N" robusto a `:` en el nombre (ver _parse_entry_ref).
+			var ref: Array = _parse_entry_ref(te)
+			var item_local_name: String = ref[0]
+			var idx_zero: int = (ref[1] as int) - 1
+			if Handle.strings.has(item_local_name):
+				change_to(item_local_name, idx_zero)
 				string_selector.clear()
-				for _stri: IStringContainer in Handle.strings[_item_name]:
-					string_selector.add_item(_string_progress_prefix(_stri) + str(_stri.layer_strings[0]))
-				string_selector.select(_idx_zero)
+				for stri: IStringContainer in Handle.strings[item_local_name]:
+					string_selector.add_item(_string_progress_prefix(stri) + str(stri.layer_strings[0]))
+				string_selector.select(idx_zero)
 				string_selector.ensure_current_is_visible()
-				for _i in range(dialogue_selector.get_item_count()):
-					if dialogue_selector_entry_at(_i) == _item_name:
-						dialogue_selector.select(_i)
+				for i in range(dialogue_selector.get_item_count()):
+					if dialogue_selector_entry_at(i) == item_local_name:
+						dialogue_selector.select(i)
 						dialogue_selector.ensure_current_is_visible()
 						break
 		Handle.goto_window.queue_free()
@@ -2643,41 +2643,41 @@ func _on_entry_filter_changed(_id: int) -> void:
 # en dialogue_selector como cortesía visual; si no, dialogue_selector queda
 # sin selección pero el editor sigue funcional sobre current_entry.
 func _rebuild_entry_list() -> void:
-	var _filter_id: int = 0
+	var filter_id: int = 0
 	if has_node("EntryFilter"):
-		_filter_id = ($EntryFilter as OptionButton).get_selected_id()
-	var _search_text: String = ""
+		filter_id = ($EntryFilter as OptionButton).get_selected_id()
+	var search_text: String = ""
 	if has_node("EntrySearch"):
-		_search_text = ($EntrySearch as LineEdit).text.to_lower()
+		search_text = ($EntrySearch as LineEdit).text.to_lower()
 
 	# Bloque 2 perf: en archivos grandes, recorrer dos veces las strings de
 	# cada entry (una para _entry_passes_filter, otra para _entry_progress_prefix)
 	# se notaba al cambiar filtro. Ahora calculamos un "estado agregado" en
 	# una sola pasada por entry y lo usamos para ambas decisiones.
 	dialogue_selector.clear()
-	for _e: String in Handle.entry_names:
-		if _search_text != "" and not _e.to_lower().contains(_search_text):
+	for e: String in Handle.entry_names:
+		if search_text != "" and not e.to_lower().contains(search_text):
 			continue
-		var _state := _compute_entry_state(_e)
-		if not _state_passes_filter(_state, _filter_id):
+		var state := _compute_entry_state(e)
+		if not _state_passes_filter(state, filter_id):
 			continue
-		dialogue_selector.add_item(_state_to_prefix(_state) + _e)
+		dialogue_selector.add_item(_state_to_prefix(state) + e)
 
 	# Cortesía visual: si la entry cargada pasa el filtro, marcarla como
 	# seleccionada en la lista. Si no pasa, no se selecciona nada — pero el
 	# editor sigue editando current_entry normalmente.
 	if current_entry != "":
-		for _i in range(dialogue_selector.get_item_count()):
-			if dialogue_selector_entry_at(_i) == current_entry:
-				dialogue_selector.select(_i)
+		for i in range(dialogue_selector.get_item_count()):
+			if dialogue_selector_entry_at(i) == current_entry:
+				dialogue_selector.select(i)
 				dialogue_selector.ensure_current_is_visible()
 				break
 
 # Estado agregado de una entry. Calculado en una sola pasada para que filtro
 # y prefijo se compartan (perf en archivos grandes). Devuelve un Dictionary
 # con flags booleanos.
-func _compute_entry_state(_entry_name: String) -> Dictionary:
-	var _state := {
+func _compute_entry_state(entry_local_name: String) -> Dictionary:
+	var state := {
 		"empty": true,
 		"all_translated": true,
 		"any_untranslated": false,
@@ -2685,58 +2685,58 @@ func _compute_entry_state(_entry_name: String) -> Dictionary:
 		"any_mismatch": false,
 		"any_misclosed_sign": false,
 	}
-	if not Handle.strings.has(_entry_name):
-		return _state
-	var _arr: Array = Handle.strings[_entry_name]
-	if _arr.is_empty():
-		return _state
-	_state["empty"] = false
-	for _stri: IStringContainer in _arr:
-		if not Handle.is_string_translated(_stri):
-			_state["all_translated"] = false
-			_state["any_untranslated"] = true
-		if _stri.needs_review:
-			_state["any_review"] = true
+	if not Handle.strings.has(entry_local_name):
+		return state
+	var arr: Array = Handle.strings[entry_local_name]
+	if arr.is_empty():
+		return state
+	state["empty"] = false
+	for stri: IStringContainer in arr:
+		if not Handle.is_string_translated(stri):
+			state["all_translated"] = false
+			state["any_untranslated"] = true
+		if stri.needs_review:
+			state["any_review"] = true
 		# Validamos aunque no haya LastEdited. Algunos archivos pueden traer
 		# Content ya distinto/problemas de tags sin metadatos de edición; si
 		# aquí se saltan, la entry no muestra ⚠ hasta que el usuario toca el
 		# texto y se crea LastEdited. Las regex están cacheadas en ITagValidator.
-		var _diff := ITagValidator.validate_string(_stri)
-		var _diff_sign := IClosedSignValidator.validate_string(_stri)
-		if not _diff.ok:
-			_state["any_mismatch"] = true
-		if not _diff_sign.ok:
-			_state["any_misclosed_sign"] = true
-	return _state
+		var diff := ITagValidator.validate_string(stri)
+		var diff_sign := IClosedSignValidator.validate_string(stri)
+		if not diff.ok:
+			state["any_mismatch"] = true
+		if not diff_sign.ok:
+			state["any_misclosed_sign"] = true
+	return state
 
-func _state_passes_filter(_state: Dictionary, _filter_id: int) -> bool:
+func _state_passes_filter(state: Dictionary, filter_id: int) -> bool:
 	# Castear los flags como `as bool` (no `bool(...)`): Dictionary devuelve
 	# Variant y bool() acepta Variant pero el analyzer estricto se queja.
 	# `as bool` es la forma idiomática y silencia UNSAFE_CALL_ARGUMENT.
-	match _filter_id:
+	match filter_id:
 		0: return true
-		1: return (_state["empty"] as bool) or (_state["any_untranslated"] as bool)
-		2: return not (_state["empty"] as bool) and (_state["all_translated"] as bool)
-		3: return _state["any_review"] as bool
-		4: return _state["any_mismatch"] as bool
-		5: return _state["any_misclosed_sign"] as bool
+		1: return (state["empty"] as bool) or (state["any_untranslated"] as bool)
+		2: return not (state["empty"] as bool) and (state["all_translated"] as bool)
+		3: return state["any_review"] as bool
+		4: return state["any_mismatch"] as bool
+		5: return state["any_misclosed_sign"] as bool
 	return true
 
-func _state_to_prefix(_state: Dictionary) -> String:
+func _state_to_prefix(state: Dictionary) -> String:
 	# Prioridad: tag_mismatch > review > empty > done > todo. Tag mismatch es
 	# un problema técnico real (rompe el juego), tiene precedencia sobre la
 	# marca manual de "necesita revisión". Si la entry está marcada por el
 	# usuario y además tiene mismatch, mostramos el ⚠ porque es lo más
 	# urgente; el ★ vuelve a aparecer en cuanto se arregle el mismatch.
-	if _state["any_mismatch"] as bool:
+	if state["any_mismatch"] as bool:
 		return _PROGRESS_PREFIX_WARN
-	if _state["any_review"] as bool:
+	if state["any_review"] as bool:
 		return _PROGRESS_PREFIX_REVIEW
-	if _state["any_misclosed_sign"] as bool:
+	if state["any_misclosed_sign"] as bool:
 		return _PROGRESS_PREFIX_UNCLOSED_SIGN
-	if _state["empty"] as bool:
+	if state["empty"] as bool:
 		return _PROGRESS_PREFIX_EMPTY
-	if _state["all_translated"] as bool:
+	if state["all_translated"] as bool:
 		return _PROGRESS_PREFIX_DONE
 	return _PROGRESS_PREFIX_TODO
 
@@ -2759,8 +2759,8 @@ func _on_add_string_pressed() -> void:
 	# Si hay una string cargada, la pasamos como fuente para el modo "duplicar".
 	# Si no hay (entry vacía o nada cargado), el diálogo caerá en modo "blanco".
 	if current_string_index >= 0:
-		var _arr: Array = Handle.strings[current_entry]
-		if current_string_index < _arr.size():
+		var arr: Array = Handle.strings[current_entry]
+		if current_string_index < arr.size():
 			Handle.as_window.source_index = current_string_index
-			Handle.as_window.source_container = _arr[current_string_index]
+			Handle.as_window.source_container = arr[current_string_index]
 	add_child(Handle.as_window)
