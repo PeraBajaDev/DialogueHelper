@@ -44,8 +44,8 @@ func _on_close_requested() -> void:
 	if has_finished:
 		queue_free()
 	else:
-		Handle.gcu_window = Handle.gcu_scene.instantiate()
-		add_child(Handle.gcu_window)
+		Handle.git_conflict_unreplaced_window = Handle.git_conflict_unreplaced_scene.instantiate()
+		add_child(Handle.git_conflict_unreplaced_window)
 
 func resolved_merge_conflicts() -> void:
 	queue_free()

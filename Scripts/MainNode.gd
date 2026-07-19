@@ -174,9 +174,9 @@ func _ready() -> void:
 		# en consola por no haberlos esperado. Los unimos antes de salir.
 		_join_pending_threads()
 		if Handle.is_modified:
-			Handle.uc_window = Handle.uc_scene.instantiate()
-			Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(tree.quit))
-			add_child(Handle.uc_window)
+			Handle.unsaved_changes_window = Handle.unsaved_changes_scene.instantiate()
+			Handle.unsaved_changes_window.callback.connect(_on_unsaved_changes_confirmed.bind(tree.quit))
+			add_child(Handle.unsaved_changes_window)
 		else:
 			tree.quit(0)
 	)
@@ -386,8 +386,8 @@ func _process(_delta: float) -> void:
 	if Handle.layer_colors[current_layer] != current_color_node.color:
 		Handle.is_modified = true
 		Handle.layer_colors[current_layer] = current_color_node.color
-	if original_dialogue.text != Handle.og_str:
-		original_dialogue.text = Handle.og_str
+	if original_dialogue.text != Handle.original_string:
+		original_dialogue.text = Handle.original_string
 	# Nota: aquí había una pasada por frame que copiaba dialogue_edit.text en
 	# `current.content` y en `Handle.string_ids[id]` (red de seguridad para
 	# si la señal text_changed no disparaba). Tracé los dos caminos:
@@ -939,9 +939,9 @@ func _on_files_dropped(files: PackedStringArray) -> void:
 	var do_load := func() -> void:
 		_launch_load_thread(path)
 	if Handle.is_modified:
-		Handle.uc_window = Handle.uc_scene.instantiate()
-		Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(do_load))
-		add_child(Handle.uc_window)
+		Handle.unsaved_changes_window = Handle.unsaved_changes_scene.instantiate()
+		Handle.unsaved_changes_window.callback.connect(_on_unsaved_changes_confirmed.bind(do_load))
+		add_child(Handle.unsaved_changes_window)
 	else:
 		do_load.call()
 
@@ -952,11 +952,11 @@ func open_file_flow() -> void:
 		if FileAccess.file_exists("user://enable_git.bool"):
 			_launch_load_thread("user://repo/Strings.txt")
 		else:
-			Handle.fd_window = Handle.fd_scene.instantiate()
+			Handle.file_dialog_window = Handle.load_file_scene.instantiate()
 			# Pre-rellena la ruta con el archivo actual, si hay uno.
 			if Handle.current_file_path != "":
-				Handle.fd_window.current_path = Handle.current_file_path
-			Handle.fd_window.file_selected.connect(_launch_load_thread)
+				Handle.file_dialog_window.current_path = Handle.current_file_path
+			Handle.file_dialog_window.file_selected.connect(_launch_load_thread)
 			# Bug fix (Issue #1): al cancelar/cerrar el FileDialog nativo, Godot
 			# emite el error interno
 			#   window_move_to_foreground: Condition "!windows.has(p_window)" is true.
@@ -966,14 +966,14 @@ func open_file_flow() -> void:
 			# que ya usa el flujo de éxito (_launch_load_thread): liberar la
 			# ventana 1 frame más tarde con un tween, y poner la referencia
 			# global a null en el acto para que ningún otro código la toque.
-			Handle.fd_window.close_requested.connect(_close_fd_window_deferred)
-			Handle.fd_window.canceled.connect(_close_fd_window_deferred)
-			add_child(Handle.fd_window)
-			Handle.fd_window.show()
+			Handle.file_dialog_window.close_requested.connect(_close_fd_window_deferred)
+			Handle.file_dialog_window.canceled.connect(_close_fd_window_deferred)
+			add_child(Handle.file_dialog_window)
+			Handle.file_dialog_window.show()
 	if Handle.is_modified:
-		Handle.uc_window = Handle.uc_scene.instantiate()
-		Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(do_open))
-		add_child(Handle.uc_window)
+		Handle.unsaved_changes_window = Handle.unsaved_changes_scene.instantiate()
+		Handle.unsaved_changes_window.callback.connect(_on_unsaved_changes_confirmed.bind(do_open))
+		add_child(Handle.unsaved_changes_window)
 	else:
 		do_open.call()
 
@@ -983,8 +983,8 @@ func open_file_flow() -> void:
 # después hacemos queue_free. Así Godot ya ha terminado de devolver el foco
 # a la ventana principal cuando el FileDialog desaparece.
 func _close_fd_window_deferred() -> void:
-	var w: FileDialog = Handle.fd_window
-	Handle.fd_window = null
+	var w: FileDialog = Handle.file_dialog_window
+	Handle.file_dialog_window = null
 	if not is_instance_valid(w):
 		return
 	var t := create_tween()
@@ -1000,9 +1000,9 @@ func _launch_load_thread(path: String) -> void:
 	clear_reference_csv()
 	var t := create_tween()
 	t.tween_callback(func() -> void:
-		if Handle.fd_window != null:
-			Handle.fd_window.free()
-			Handle.fd_window = null
+		if Handle.file_dialog_window != null:
+			Handle.file_dialog_window.free()
+			Handle.file_dialog_window = null
 		Handle.loading_window = Handle.loading_scene.instantiate()
 		add_child(Handle.loading_window)
 		last_thread = IFileHandler.load_file(path)
@@ -1033,25 +1033,25 @@ func save_as_flow() -> void:
 	_open_save_dialog()
 
 func _open_save_dialog() -> void:
-	Handle.fds_window = Handle.fds_scene.instantiate()
+	Handle.save_file_window = Handle.save_file_scene.instantiate()
 	# Pre-rellena con la ruta actual si existe, para que el diálogo no parta de cero.
 	if Handle.current_file_path != "":
-		Handle.fds_window.current_path = Handle.current_file_path
-	Handle.fds_window.file_selected.connect(_launch_save_thread)
+		Handle.save_file_window.current_path = Handle.current_file_path
+	Handle.save_file_window.file_selected.connect(_launch_save_thread)
 	# Bug fix (Issue #1): mismo razonamiento que en open_file_flow. El
 	# FileDialog nativo de Save también soltaba
 	#   window_move_to_foreground: Condition "!windows.has(p_window)" is true.
 	# si se cancelaba estando ya con un archivo abierto. Liberamos diferido.
-	Handle.fds_window.close_requested.connect(_close_fds_window_deferred)
-	Handle.fds_window.canceled.connect(_close_fds_window_deferred)
-	add_child(Handle.fds_window)
-	Handle.fds_window.show()
+	Handle.save_file_window.close_requested.connect(_close_fds_window_deferred)
+	Handle.save_file_window.canceled.connect(_close_fds_window_deferred)
+	add_child(Handle.save_file_window)
+	Handle.save_file_window.show()
 
 # Limpieza diferida del FileDialog de Save. Mismo patrón que
 # _close_fd_window_deferred (ver explicación allí).
 func _close_fds_window_deferred() -> void:
-	var w: FileDialog = Handle.fds_window
-	Handle.fds_window = null
+	var w: FileDialog = Handle.save_file_window
+	Handle.save_file_window = null
 	if not is_instance_valid(w):
 		return
 	var t := create_tween()
@@ -1064,9 +1064,9 @@ func _close_fds_window_deferred() -> void:
 func _launch_save_thread(path: String) -> void:
 	var t := create_tween()
 	t.tween_callback(func() -> void:
-		if Handle.fds_window != null:
-			Handle.fds_window.free()
-			Handle.fds_window = null
+		if Handle.save_file_window != null:
+			Handle.save_file_window.free()
+			Handle.save_file_window = null
 		Handle.saving_window = Handle.saving_scene.instantiate()
 		add_child(Handle.saving_window)
 		# save_file ya no devuelve Thread; el seguimiento se hace vía
@@ -1079,9 +1079,9 @@ func new_file_flow() -> void:
 	if _io_busy():
 		return
 	if Handle.is_modified:
-		Handle.uc_window = Handle.uc_scene.instantiate()
-		Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(clear_data))
-		add_child(Handle.uc_window)
+		Handle.unsaved_changes_window = Handle.unsaved_changes_scene.instantiate()
+		Handle.unsaved_changes_window.callback.connect(_on_unsaved_changes_confirmed.bind(clear_data))
+		add_child(Handle.unsaved_changes_window)
 	else:
 		clear_data()
 
@@ -1098,9 +1098,9 @@ func quit_flow() -> void:
 	# pedir el quit, para evitar el error de "Thread not finished" en consola.
 	_join_pending_threads()
 	if Handle.is_modified:
-		Handle.uc_window = Handle.uc_scene.instantiate()
-		Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(tree.quit))
-		add_child(Handle.uc_window)
+		Handle.unsaved_changes_window = Handle.unsaved_changes_scene.instantiate()
+		Handle.unsaved_changes_window.callback.connect(_on_unsaved_changes_confirmed.bind(tree.quit))
+		add_child(Handle.unsaved_changes_window)
 	else:
 		get_tree().quit()
 
@@ -1198,9 +1198,9 @@ func _on_recent_selected(id: int) -> void:
 	var do_load := func() -> void:
 		_launch_load_thread(path)
 	if Handle.is_modified:
-		Handle.uc_window = Handle.uc_scene.instantiate()
-		Handle.uc_window.callback.connect(_on_unsaved_changes_confirmed.bind(do_load))
-		add_child(Handle.uc_window)
+		Handle.unsaved_changes_window = Handle.unsaved_changes_scene.instantiate()
+		Handle.unsaved_changes_window.callback.connect(_on_unsaved_changes_confirmed.bind(do_load))
+		add_child(Handle.unsaved_changes_window)
 	else:
 		do_load.call()
 
@@ -1214,13 +1214,13 @@ func _on_recent_selected(id: int) -> void:
 # scrollable y queue_free al cerrar — basta con cambiar el título y el texto.
 
 func _show_load_error(msg: String) -> void:
-	var w := Handle.se_scene.instantiate() as Window
+	var w := Handle.style_error_scene.instantiate() as Window
 	w.title = "Error loading file"
 	(w.get_node(^"TextEdit") as TextEdit).text = msg
 	add_child(w)
 
 func _show_load_warning(msg: String) -> void:
-	var w := Handle.se_scene.instantiate() as Window
+	var w := Handle.style_error_scene.instantiate() as Window
 	w.title = "File loaded with warnings"
 	(w.get_node(^"TextEdit") as TextEdit).text = msg
 	add_child(w)
@@ -1630,7 +1630,7 @@ func _perform_delete_entry(entry_local_name: String) -> void:
 	similar_entries.clear()
 	_set_dialogue_edit_text_silent("")
 	original_dialogue.text = ""
-	Handle.og_str = ""
+	Handle.original_string = ""
 	if dialogue_selector.get_item_count() > 0:
 		var next: int = 0
 		dialogue_selector.select(next)
@@ -1688,7 +1688,7 @@ func _perform_delete_string(entry_local_name: String, idx: int) -> void:
 			similar_entries.clear()
 			_set_dialogue_edit_text_silent("")
 			original_dialogue.text = ""
-			Handle.og_str = ""
+			Handle.original_string = ""
 			_set_loaded(current_entry, -1)
 	else:
 		if entry_local_name == current_entry:
@@ -1953,7 +1953,7 @@ func clear_reference_csv() -> void:
 	update_reference_panel()
 
 func _show_reference_csv_error(msg: String) -> void:
-	var w := Handle.se_scene.instantiate() as Window
+	var w := Handle.style_error_scene.instantiate() as Window
 	w.title = "Reference CSV error"
 	(w.get_node(^"TextEdit") as TextEdit).text = msg
 	add_child(w)
@@ -2207,7 +2207,7 @@ func _on_item_list_item_selected_str(index: int) -> void:
 			if box.handle.global_env.has("speaker"):
 				box.handle.global_env.erase("speaker")
 	Handle.layer_colors = stri.layer_colors
-	Handle.og_str = stri.original_content
+	Handle.original_string = stri.original_content
 	var t := create_tween()
 	t.tween_callback(func() -> void:
 		current_font_node.set_value(stri.font_style + 1)
@@ -2270,7 +2270,7 @@ func change_to(item: String, index: int = 0) -> void:
 				if box.handle.global_env.has("speaker"):
 					box.handle.global_env.erase("speaker")
 			Handle.layer_colors = stri.layer_colors
-			Handle.og_str = stri.original_content
+			Handle.original_string = stri.original_content
 			var t := create_tween()
 			t.tween_callback(func() -> void:
 				current_font_node.set_value(stri.font_style + 1)
@@ -2498,7 +2498,7 @@ func clear_data() -> void:
 		Handle.layer_colors[i] = Color.WHITE
 	for i in range(Handle.layer_strings.size()):
 		Handle.layer_strings[i] = ""
-	Handle.og_str = ""
+	Handle.original_string = ""
 	original_dialogue.text = ""
 	_set_dialogue_edit_text_silent("")
 	dialogue_edit.clear_undo_history()
@@ -2563,8 +2563,8 @@ func about_menu_selected(id: int) -> void:
 			add_child(Handle.author_window)
 			(Handle.author_window.get_node("Label/LineEdit") as LineEdit).text = author
 		3: # About DH...
-			Handle.adh_window = Handle.adh_scene.instantiate()
-			add_child(Handle.adh_window)
+			Handle.about_window = Handle.about_scene.instantiate()
+			add_child(Handle.about_window)
 
 func open_search_menu() -> void:
 	Handle.search_window = Handle.search_scene.instantiate()
@@ -2745,8 +2745,8 @@ func _on_reload_style_pressed() -> void:
 	Handle.main_node.box.handle.force_update = true
 
 func _on_add_entry_pressed() -> void:
-	Handle.ae_window = Handle.ae_scene.instantiate()
-	add_child(Handle.ae_window)
+	Handle.add_entry_window = Handle.add_entry_scene.instantiate()
+	add_child(Handle.add_entry_window)
 
 func _on_add_string_pressed() -> void:
 	# Bug fix (decoupling): añadimos a la entry cargada en el editor, no a la
@@ -2754,13 +2754,13 @@ func _on_add_string_pressed() -> void:
 	# filtro o vacía).
 	if current_entry == "" or not Handle.strings.has(current_entry):
 		return
-	Handle.as_window = Handle.as_scene.instantiate()
-	Handle.as_window.entry = current_entry
+	Handle.add_string_window = Handle.add_string_scene.instantiate()
+	Handle.add_string_window.entry = current_entry
 	# Si hay una string cargada, la pasamos como fuente para el modo "duplicar".
 	# Si no hay (entry vacía o nada cargado), el diálogo caerá en modo "blanco".
 	if current_string_index >= 0:
 		var arr: Array = Handle.strings[current_entry]
 		if current_string_index < arr.size():
-			Handle.as_window.source_index = current_string_index
-			Handle.as_window.source_container = arr[current_string_index]
-	add_child(Handle.as_window)
+			Handle.add_string_window.source_index = current_string_index
+			Handle.add_string_window.source_container = arr[current_string_index]
+	add_child(Handle.add_string_window)

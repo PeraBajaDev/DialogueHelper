@@ -44,9 +44,9 @@ func _ready() -> void:
 			style_select.select(i)
 		i += 1
 	if !logs.is_empty(): # An error ocurred.
-		Handle.se_window = Handle.se_scene.instantiate()
-		(Handle.se_window.get_node(^"TextEdit") as TextEdit).text = "\n".join(PackedStringArray(logs))
-		Handle.add_child(Handle.se_window)
+		Handle.style_error_window = Handle.style_error_scene.instantiate()
+		(Handle.style_error_window.get_node(^"TextEdit") as TextEdit).text = "\n".join(PackedStringArray(logs))
+		Handle.add_child(Handle.style_error_window)
 	enable_git.button_pressed = FileAccess.file_exists(&"user://enable_git.bool")
 	repo_label.visible = enable_git.button_pressed
 	if FileAccess.file_exists(&"user://git_url.txt"):

@@ -2,39 +2,39 @@ extends Node
 
 var loading_scene := preload("res://Subwindows/ProgressBars/Loading.tscn")
 var saving_scene := preload("res://Subwindows/ProgressBars/Saving.tscn")
-var fd_scene := preload("res://Subwindows/FileAction/LoadFile.tscn")
+var load_file_scene := preload("res://Subwindows/FileAction/LoadFile.tscn")
 var show_info_scene := preload("res://Subwindows/ShowInfo.tscn")
 var author_scene := preload("res://Subwindows/AuthorInfo.tscn")
 var settings_scene := preload("res://Subwindows/Settings.tscn")
-var fds_scene := preload("res://Subwindows/FileAction/SaveFile.tscn")
+var save_file_scene := preload("res://Subwindows/FileAction/SaveFile.tscn")
 var goto_scene := preload("res://Subwindows/GoTo.tscn")
 var search_scene := preload("res://Subwindows/Search.tscn")
-var gc_scene := preload("res://Subwindows/GitConflict.tscn")
-var gcu_scene := preload("res://Subwindows/GitConflictUnreplaced.tscn")
-var se_scene := preload("res://Subwindows/StyleError.tscn")
-var ls_scene := preload("res://Subwindows/ProgressBars/LoadingStyle.tscn")
-var uc_scene := preload("res://Subwindows/UnsavedChanges.tscn")
-var adh_scene := preload("res://Subwindows/AboutDh.tscn")
-var ae_scene := preload("res://Subwindows/AddEntry.tscn")
-var as_scene := preload("res://Subwindows/AddString.tscn")
+var git_conflict_scene := preload("res://Subwindows/GitConflict.tscn")
+var git_conflict_unreplaced_scene := preload("res://Subwindows/GitConflictUnreplaced.tscn")
+var style_error_scene := preload("res://Subwindows/StyleError.tscn")
+var loading_style_scene := preload("res://Subwindows/ProgressBars/LoadingStyle.tscn")
+var unsaved_changes_scene := preload("res://Subwindows/UnsavedChanges.tscn")
+var about_scene := preload("res://Subwindows/AboutDh.tscn")
+var add_entry_scene := preload("res://Subwindows/AddEntry.tscn")
+var add_string_scene := preload("res://Subwindows/AddString.tscn")
 
 var loading_window: WLoading = null
 var saving_window: WLoading = null
-var fd_window: FileDialog = null
+var file_dialog_window: FileDialog = null
 var show_info_window: Window = null
 var author_window: Node = null
 var settings_window: Node = null
-var fds_window: FileDialog = null
+var save_file_window: FileDialog = null
 var goto_window: Node = null
 var search_window: Node = null
-var gc_window: WGitConflict = null
-var gcu_window: Node = null
-var se_window: Node = null
-var ls_window: Node = null
-var uc_window: WUnsavedChanges = null
-var adh_window: Node = null
-var ae_window: Node = null
-var as_window: WAddString = null
+var git_conflict_window: WGitConflict = null
+var git_conflict_unreplaced_window: Node = null
+var style_error_window: Node = null
+var load_style_window: Node = null
+var unsaved_changes_window: WUnsavedChanges = null
+var about_window: Node = null
+var add_entry_window: Node = null
+var add_string_window: WAddString = null
 
 var style := "Template"
 
@@ -51,7 +51,7 @@ var current_font := 0
 var layers := 5
 var layer_strings := []
 var layer_colors := []
-var og_str := ""
+var original_string := ""
 
 var strings := {}
 var string_table := {}
@@ -120,7 +120,7 @@ func pick_default_style() -> String:
 # StyleError porque ya está cableada y queue_free al cerrar; no merece un
 # .tscn aparte.
 func _show_no_styles_message() -> void:
-	se_window = se_scene.instantiate()
+	style_error_window = style_error_scene.instantiate()
 	var message := "No Styles were found.\n\n" \
 		+ "To use Dialogue Helper, place at least one Style folder " \
 		+ "(such as \"Deltarune\") inside the \"Styles\" directory next to " \
@@ -134,8 +134,8 @@ func _show_no_styles_message() -> void:
 		+ "You can download Styles from:\n" \
 		+ "  https://github.com/ryi3r/DialogueHelper/\n\n" \
 		+ "Close the app, add the Styles folder, and re-open."
-	(se_window.get_node(^"TextEdit") as TextEdit).text = message
-	add_child(se_window)
+	(style_error_window.get_node(^"TextEdit") as TextEdit).text = message
+	add_child(style_error_window)
 
 func load_style(new_style: Variant = null) -> void:
 	if new_style is String:
@@ -163,9 +163,9 @@ func load_style(new_style: Variant = null) -> void:
 			print("Style \"%s\" was not found. Loading \"%s\" instead." % [style, picked])
 		style = picked
 
-	ls_window = ls_scene.instantiate()
-	add_child(ls_window)
-	var progress_bar: ProgressBar = ls_window.get_node(^"ProgressBar")
+	load_style_window = loading_style_scene.instantiate()
+	add_child(load_style_window)
+	var progress_bar: ProgressBar = load_style_window.get_node(^"ProgressBar")
 	if FileAccess.file_exists(style_get_path(&"Metadata.json")):
 		style_metadata = JSON.parse_string(FileAccess.get_file_as_string(style_get_path(&"Metadata.json")))
 		if style_metadata == null:
@@ -219,11 +219,11 @@ func load_style(new_style: Variant = null) -> void:
 		progress_bar.value = progress_bar.max_value
 	else:
 		logs.append("Style Path \"%s\" was not found." % style_get_relative_path(&""))
-	ls_window.queue_free()
+	load_style_window.queue_free()
 	if !logs.is_empty(): # An error ocurred.
-		se_window = se_scene.instantiate()
-		(se_window.get_node(^"TextEdit") as TextEdit).text = "\n".join(PackedStringArray(logs))
-		add_child(se_window)
+		style_error_window = style_error_scene.instantiate()
+		(style_error_window.get_node(^"TextEdit") as TextEdit).text = "\n".join(PackedStringArray(logs))
+		add_child(style_error_window)
 
 func style_get_path(path: String, style_file_name: String = style) -> String:
 	return "res://Styles/%s/%s" % [style_file_name, path]

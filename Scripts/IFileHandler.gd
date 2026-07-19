@@ -140,7 +140,7 @@ func load_file(path: String, override_path: String = "", override_modified: bool
 			# Fix #3: ahora sí se actualiza string_size, así Search.gd ve el tamaño
 			# correcto y la barra de progreso de búsqueda funciona.
 			Handle.string_size = local_string_table.size()
-			Handle.og_str = ""
+			Handle.original_string = ""
 			for i in range(Handle.layer_strings.size()):
 				Handle.layer_strings[i] = ""
 			for i in range(Handle.layer_colors.size()):
@@ -341,11 +341,11 @@ func _save_git_phase2_resolve(path: String, pull_ok: bool, conflicts: Array) -> 
 		_save_phase_write(path)
 		return
 	# Crear gc_window aquí, en main; ya no hay race con el worker.
-	Handle.gc_window = Handle.gc_scene.instantiate()
-	Handle.gc_window.conflicts = conflicts
+	Handle.git_conflict_window = Handle.git_conflict_scene.instantiate()
+	Handle.git_conflict_window.conflicts = conflicts
 	# Conectamos ANTES de add_child para no perder el evento si por algún motivo
 	# la ventana se cerrara inmediatamente.
-	Handle.gc_window.tree_exited.connect(func() -> void:
+	Handle.git_conflict_window.tree_exited.connect(func() -> void:
 		for conflict: IGitConflict in conflicts:
 			var string_table: IStringTable = Handle.string_table[conflict.string_id]
 			match conflict.keep:
@@ -362,7 +362,7 @@ func _save_git_phase2_resolve(path: String, pull_ok: bool, conflicts: Array) -> 
 					Handle.string_ids[conflict.string_id] = conflict.current_string
 		_save_phase_write(path)
 	, CONNECT_ONE_SHOT)
-	Handle.main_node.add_child(Handle.gc_window)
+	Handle.main_node.add_child(Handle.git_conflict_window)
 
 # Bloque 3: construye el array de strings (líneas serializadas) que
 # representa el estado actual de Handle.strings en formato del .txt.
