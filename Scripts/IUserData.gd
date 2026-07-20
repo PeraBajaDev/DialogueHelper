@@ -5,8 +5,8 @@ var env: Dictionary = {}
 var global_env: Dictionary = {}
 var font := IFont.new()
 var glyph := IUserGlyph.new()
-@warning_ignore("shadowed_global_identifier")
-var char := IUserChar.new()
+
+var user_char := IUserChar.new()
 var box := IBox.new()
 var queue_update_secs := -1.0
 
@@ -24,12 +24,12 @@ func draw_glyph() -> void:
 	# espacio, como ya hace Script.gd al calcular anchos y posiciones). Si se
 	# indexa font.glyphs directamente con "\t" el Dictionary no tiene esa
 	# clave y esto crashea con "Invalid access to property or key".
-	var glyph_char: String = " " if char.char == "\t" else char.char
-	__parent.draw_texture_rect_region(font.texture, char.glyph, (font.glyphs[glyph_char] as IGlyph).rect, glyph.color)
-	if char.glyph.position.x + char.glyph.size.x + 20 > __parent.custom_minimum_size.x:
-		__parent.custom_minimum_size.x = char.glyph.position.x + char.glyph.size.x + 20
-	if char.glyph.position.y + char.glyph.size.y + 20 > __parent.custom_minimum_size.y:
-		__parent.custom_minimum_size.y = char.glyph.position.y + char.glyph.size.y + 20
+	var glyph_char: String = " " if user_char.character == "\t" else user_char.character
+	__parent.draw_texture_rect_region(font.texture, user_char.glyph, (font.glyphs[glyph_char] as IGlyph).rect, glyph.color)
+	if user_char.glyph.position.x + user_char.glyph.size.x + 20 > __parent.custom_minimum_size.x:
+		__parent.custom_minimum_size.x = user_char.glyph.position.x + user_char.glyph.size.x + 20
+	if user_char.glyph.position.y + user_char.glyph.size.y + 20 > __parent.custom_minimum_size.y:
+		__parent.custom_minimum_size.y = user_char.glyph.position.y + user_char.glyph.size.y + 20
 
 func draw_texture(texture: Texture2D, position: Vector2, modulate: Color = Color.WHITE) -> void:
 	__parent.draw_texture(texture, position, modulate)

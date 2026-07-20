@@ -11,12 +11,12 @@ class_name IClosedSignValidator
 ## apertura y cierrre
 static func _has_been_closed_correctly(text: String, open_symbol: String, close_symbol: String) -> bool:
 	var stack: Array = []
-	for character in text:
-		if character == open_symbol:
-			stack.push_back(character)
-		elif character == close_symbol and len(stack) == 0:
+	for user_char in text:
+		if user_char == open_symbol:
+			stack.push_back(user_char)
+		elif user_char == close_symbol and len(stack) == 0:
 			return false
-		elif character == close_symbol:
+		elif user_char == close_symbol:
 			stack.pop_back()
 	return len(stack) == 0
 

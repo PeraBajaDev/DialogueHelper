@@ -154,12 +154,12 @@ static func _strip_backtick_escapes(value: String) -> String:
 	var result: String = ""
 	var i: int = 0
 	while i < value.length():
-		var character: String = value[i]
-		if character == "`" and i + 1 < value.length():
+		var user_char: String = value[i]
+		if user_char == "`" and i + 1 < value.length():
 			# Saltamos backtick + el carácter siguiente (queda fuera).
 			i += 2
 		else:
-			result += character
+			result += user_char
 			i += 1
 	return result
 

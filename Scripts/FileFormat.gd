@@ -8,12 +8,12 @@ static func parse_line(line: String) -> IFormatEntry:
 	var name := ""
 	var format_entry := IFormatEntry.new()
 
-	for character: String in line:
-		if character == &":" && !got_name: # Entry Start
+	for user_char: String in line:
+		if user_char == &":" && !got_name: # Entry Start
 			name = line.substr(last_entry, index - last_entry)
 			got_name = true
 			last_entry = index + 1
-		elif character == &";" || index == line.length() - 1: # Entry End
+		elif user_char == &";" || index == line.length() - 1: # Entry End
 			# Bug fix: cuando estamos en el último char de la línea y NO es ";",
 			# ese char forma parte del valor (o del kind). Antes, en el branch
 			# `if !got_name` no se incluía y `int(substr(0, 0))` = 0 en lugar
@@ -22,7 +22,7 @@ static func parse_line(line: String) -> IFormatEntry:
 			# Solución: calcular `end` una vez (ajustado si hace falta) y
 			# usarlo en ambos branches del if/else.
 			var end := index
-			if index == line.length() - 1 && character != &";":
+			if index == line.length() - 1 && user_char != &";":
 				end += 1
 			if !got_name:
 				format_entry.kind = int(line.substr(last_entry, end - last_entry))

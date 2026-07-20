@@ -67,14 +67,14 @@ static func prepare_draw(data: IUserData) -> void:
 		data.global_env.face_texture = null
 		data.global_env.face_path = ""
 		data.global_env.toribody_texture = data.load_texture("Assets/spr_face_tbody.png")
-		
+
 	if data.global_env.has("speaker") and str(data.global_env.speaker) != "":
 		var has_E_tag := false
 		for _ls: String in data.glyph.layer_strings:
 			if _ls.find("\\E") != -1:
 				has_E_tag = true
 				break
-			
+
 		if has_E_tag:
 			var s := str(data.global_env.speaker)
 			if s.length() > 0:
@@ -97,9 +97,9 @@ static func _is_line_leading_char(data: IUserData) -> bool:
 	var _newline_chars: Array = []
 	if Handle.style_metadata.has("NewLines"):
 		_newline_chars = Handle.style_metadata.NewLines as Array
-	var _i: int = data.char.index - 1
+	var _i: int = data.user_char.index - 1
 	while _i >= 0:
-		var _char: String = data.char.string[_i]
+		var _char: String = data.user_char.string[_i]
 		if _newline_chars.has(_char):
 			return true
 		if _char == " " || _char == "\t":
@@ -108,7 +108,7 @@ static func _is_line_leading_char(data: IUserData) -> bool:
 		# Si los 2 caracteres justo antes de esta posición son "\<letra>",
 		# _char es el segundo carácter de un tag de control de 3 caracteres
 		# ("\" + letra + letra/dígito). Lo saltamos entero y seguimos.
-		if _i >= 2 && data.char.string[_i - 2] == "\\":
+		if _i >= 2 && data.user_char.string[_i - 2] == "\\":
 			_i -= 3
 			continue
 		return false
@@ -134,10 +134,10 @@ static func _mood_color(_n: int) -> Color:
 # queda sin colorear.
 static func _bullet_has_space_after_asterisk(data: IUserData, start_index: int) -> bool:
 	var _i := start_index
-	while _i < data.char.string.length() && (data.char.string[_i] == "\t" || data.char.string[_i] == " "):
+	while _i < data.user_char.string.length() && (data.user_char.string[_i] == "\t" || data.user_char.string[_i] == " "):
 		_i += 1
-	if _i < data.char.string.length() && data.char.string[_i] == "*":
-		return _i + 1 < data.char.string.length() && data.char.string[_i + 1] == " "
+	if _i < data.user_char.string.length() && data.user_char.string[_i] == "*":
+		return _i + 1 < data.user_char.string.length() && data.user_char.string[_i + 1] == " "
 	return false
 
 static func draw_portrait(data: IUserData) -> void:
@@ -240,7 +240,7 @@ static func draw_portrait(data: IUserData) -> void:
 		var _t: Texture2D = data.global_env.face_texture
 		data.draw_texture_rect(_t, Rect2(_x, _y, _t.get_width() * 2, _t.get_height() * 2), false)
 
-# This function will be called for each glyph (character)
+# This function will be called for each glyph (user_char)
 # in the string, this allows you full control of how
 # it gets drawn.
 static func draw_glyph(data: IUserData) -> void:
@@ -250,25 +250,25 @@ static func draw_glyph(data: IUserData) -> void:
 	# TAB nunca llegaba a dibujarse ni a avanzar la posición X, quedando
 	# invisible en la previsualización. Se los excluye explícitamente de este
 	# corte temprano para que sigan el mismo camino que el resto de caracteres.
-	if data.char.is_ignore || (!data.font.glyphs.has(data.char.char) && data.char.char != "\t" && !data.char.is_newline):
+	if data.user_char.is_ignore || (!data.font.glyphs.has(data.user_char.character) && data.user_char.character != "\t" && !data.user_char.is_newline):
 		return
-	if not data.char.is_escaped:
+	if not data.user_char.is_escaped:
 		if data.env.skip > 0:
 			data.env.skip -= 1
 			return
-		if data.char.string.length() - data.char.index >= 3:
-			if data.char.string.substr(data.char.index, 3) == "/%%":
+		if data.user_char.string.length() - data.user_char.index >= 3:
+			if data.user_char.string.substr(data.user_char.index, 3) == "/%%":
 				data.env.skip = 2
 				return
-		if data.char.string.length() - data.char.index >= 2:
-			if data.char.string.substr(data.char.index, 2) == "/%" || \
-				(data.char.char == "^" && data.char.string.substr(data.char.index + 1, 1).is_valid_int()) || \
-				data.char.string.substr(data.char.index, 2) == "%%":
+		if data.user_char.string.length() - data.user_char.index >= 2:
+			if data.user_char.string.substr(data.user_char.index, 2) == "/%" || \
+				(data.user_char.character == "^" && data.user_char.string.substr(data.user_char.index + 1, 1).is_valid_int()) || \
+				data.user_char.string.substr(data.user_char.index, 2) == "%%":
 				data.env.skip = 1
 				return
-			if data.char.char == "\\":
+			if data.user_char.character == "\\":
 				data.env.skip = 2
-				data.global_env.portrait_target = data.char.string.substr(data.char.index + 1, 2)
+				data.global_env.portrait_target = data.user_char.string.substr(data.user_char.index + 1, 2)
 				if data.global_env.has("portrait_target") && str(data.global_env.portrait_target).length() >= 2:
 					match str(data.global_env.portrait_target)[0]:
 						"E":
@@ -343,17 +343,17 @@ static func draw_glyph(data: IUserData) -> void:
 								# se olvidó del espacio ("*Texto"), la línea se deja
 								# en blanco/color por defecto, tal como se pidió.
 								var _mood_n: int = int(str(data.global_env.portrait_target)[1])
-								if _bullet_has_space_after_asterisk(data, data.char.index + 3):
+								if _bullet_has_space_after_asterisk(data, data.user_char.index + 3):
 									data.glyph.color = _mood_color(_mood_n)
 						_:
 							data.env.skip = 0
 				if data.env.skip != 0:
 					return
-		if (data.char.string.length() - data.char.index == 1 || data.char.index == 0) && data.char.char == "/":
+		if (data.user_char.string.length() - data.user_char.index == 1 || data.user_char.index == 0) && data.user_char.character == "/":
 			return
-		if data.char.string.length() - data.char.index == 1 && data.char.char == "%":
+		if data.user_char.string.length() - data.user_char.index == 1 && data.user_char.character == "%":
 			return
-	var _act_as_newline := data.char.is_newline
+	var _act_as_newline := data.user_char.is_newline
 	var scale := data.glyph.vscale * data.font.scale * 2.0
 	match data.env._f:
 		1, 2, 3, 5, 7, 8, 10, 11, 12, 13, 15, 17, 18, 19, 20, 21, 40, 41, 55, 60, 61, 63, 64, 666, 667, 999:
@@ -402,7 +402,7 @@ static func draw_glyph(data: IUserData) -> void:
 					data.env._sx = 9
 					data.env._sy = 20
 	data.font = data.get_font(data.get_current_font())
-	if data.char.index > data.env.checked_index:
+	if data.user_char.index > data.env.checked_index:
 		if data.env.checked_index == -1:
 			data.env.checked_index = 0
 		var _i := 0
@@ -414,12 +414,12 @@ static func draw_glyph(data: IUserData) -> void:
 		# Un TAB es whitespace real para el cálculo de salto. Tratarlo como
 		# parte de una palabra haría que el ancho de la siguiente palabra se
 		# midiera de forma inconsistente respecto al dibujo.
-		while data.char.index + _i < data.char.string.length() && (data.char.string[data.char.index + _i] == " " || data.char.string[data.char.index + _i] == "\t" || data.char.string[data.char.index + _i] == "&"):
-			_fs += data.char.string[data.char.index + _i]
+		while data.user_char.index + _i < data.user_char.string.length() && (data.user_char.string[data.user_char.index + _i] == " " || data.user_char.string[data.user_char.index + _i] == "\t" || data.user_char.string[data.user_char.index + _i] == "&"):
+			_fs += data.user_char.string[data.user_char.index + _i]
 			_i += 1
 
-		while data.char.index + _i < data.char.string.length() && (data.char.string[data.char.index + _i] != " " && data.char.string[data.char.index + _i] != "\t" && data.char.string[data.char.index + _i] != "&"):
-			var _c := data.char.string[data.char.index + _i]
+		while data.user_char.index + _i < data.user_char.string.length() && (data.user_char.string[data.user_char.index + _i] != " " && data.user_char.string[data.user_char.index + _i] != "\t" && data.user_char.string[data.user_char.index + _i] != "&"):
+			var _c := data.user_char.string[data.user_char.index + _i]
 
 			# Si el carácter es un salto de línea del estilo (#, \n, etc.),
 			# no debe contar para el ancho visible de la línea.
@@ -434,26 +434,26 @@ static func draw_glyph(data: IUserData) -> void:
 					_i += 2
 					continue
 				"/":
-					if data.char.index + _i == data.char.string.length() - 1 || data.char.index + _i == 0:
+					if data.user_char.index + _i == data.user_char.string.length() - 1 || data.user_char.index + _i == 0:
 						_i += 1
 						continue
-					if (data.char.index + _i == data.char.string.length() - 2 && data.char.string[data.char.index + _i + 1] == "%") || \
-						(data.char.index + _i == data.char.string.length() - 3 && data.char.string[data.char.index + _i + 1] == "%" && data.char.string[data.char.index + _i + 2] == "%"):
+					if (data.user_char.index + _i == data.user_char.string.length() - 2 && data.user_char.string[data.user_char.index + _i + 1] == "%") || \
+						(data.user_char.index + _i == data.user_char.string.length() - 3 && data.user_char.string[data.user_char.index + _i + 1] == "%" && data.user_char.string[data.user_char.index + _i + 2] == "%"):
 						_i += 2
 						continue
 				"%":
-					if (data.char.index + _i == data.char.string.length() - 2 && data.char.string[data.char.index + _i + 1] == "%") || \
-						data.char.index + _i == data.char.string.length() - 1:
+					if (data.user_char.index + _i == data.user_char.string.length() - 2 && data.user_char.string[data.user_char.index + _i + 1] == "%") || \
+						data.user_char.index + _i == data.user_char.string.length() - 1:
 						_i += 2
 						continue
 
 			_fs += _c
 			_i += 1
 
-		data.env.checked_index = data.char.index + _i
-		var _cpos := data.char.position_offset.x
+		data.env.checked_index = data.user_char.index + _i
+		var _cpos := data.user_char.position_offset.x
 		#print(_fs)
-		
+
 		for _char in _fs:
 			if !_newline_chars.has(_char) and (data.font.glyphs.has(_char) || _char == "\t"):
 				var glyph: IGlyph = data.font.glyphs[" " if _char == "\t" else _char]
@@ -491,10 +491,10 @@ static func draw_glyph(data: IUserData) -> void:
 			# empiezan en la misma columna y NO heredan los TAB previos al bullet.
 			# Los TAB/espacios escritos DESPUÉS de "&" siguen siendo whitespace
 			# real y se suman a esta base.
-			if !data.char.is_newline || data.char.char == "&":
+			if !data.user_char.is_newline || data.user_char.character == "&":
 				var _space_glyph: IGlyph = data.font.glyphs[" "]
 				var _space_cell_width: float = ((data.env._sx if data.env._sx != -1 else _space_glyph.shift) + _space_glyph.offset) * scale
-				data.char.position_offset.x = ASTERISK_PREFIX_WIDTH_CELLS * _space_cell_width
+				data.user_char.position_offset.x = ASTERISK_PREFIX_WIDTH_CELLS * _space_cell_width
 			else:
 				# Sangría objetivo: la columna donde empieza el TEXTO del bullet
 				# (justo después de "* "), no la columna del "*" en sí.
@@ -518,34 +518,34 @@ static func draw_glyph(data: IUserData) -> void:
 				# Esta rama queda sólo para los separadores explícitos #/\n,
 				# que conservan su ajuste histórico de TAB.
 				var _explicit_tabs := 0
-				if data.char.is_newline:
-					var _look_i := data.char.index + 1
-					while _look_i < data.char.string.length() && data.char.string[_look_i] == "\t":
+				if data.user_char.is_newline:
+					var _look_i := data.user_char.index + 1
+					while _look_i < data.user_char.string.length() && data.user_char.string[_look_i] == "\t":
 						_explicit_tabs += 1
 						_look_i += 1
-				data.char.position_offset.x = maxf(0.0, _target_indent_x - float(_explicit_tabs) * _tab_cell_width)
+				data.user_char.position_offset.x = maxf(0.0, _target_indent_x - float(_explicit_tabs) * _tab_cell_width)
 		else:
-			data.char.position_offset.x = 0
+			data.user_char.position_offset.x = 0
 		if data.env._sy == -1:
 			var size: int = data.font.glyphs["A"].rect.size.y
-			data.char.position_offset.y += (size + (size % 2) + (data.font.size % 2)) * scale
+			data.user_char.position_offset.y += (size + (size % 2) + (data.font.size % 2)) * scale
 		else:
-			data.char.position_offset.y += data.env._sy * scale
-	if !data.char.is_newline:
-		if data.font.glyphs.has(data.char.char) || data.char.char == "\t":
-			var glyph: IGlyph = data.font.glyphs[" " if data.char.char == "\t" else data.char.char]
-			data.char.glyph.position.x = data.char.start_position.x + data.char.position_offset.x + (glyph.offset * scale)
-			data.char.glyph.position.y = data.char.start_position.y + data.char.position_offset.y
-			data.char.glyph.size.x = glyph.rect.size.x * scale * (TAB_WIDTH_IN_SPACE_CELLS if data.char.char == "\t" else 1.0)
-			data.char.glyph.size.y = glyph.rect.size.y * scale
+			data.user_char.position_offset.y += data.env._sy * scale
+	if !data.user_char.is_newline:
+		if data.font.glyphs.has(data.user_char.character) || data.user_char.character == "\t":
+			var glyph: IGlyph = data.font.glyphs[" " if data.user_char.character == "\t" else data.user_char.character]
+			data.user_char.glyph.position.x = data.user_char.start_position.x + data.user_char.position_offset.x + (glyph.offset * scale)
+			data.user_char.glyph.position.y = data.user_char.start_position.y + data.user_char.position_offset.y
+			data.user_char.glyph.size.x = glyph.rect.size.x * scale * (TAB_WIDTH_IN_SPACE_CELLS if data.user_char.character == "\t" else 1.0)
+			data.user_char.glyph.size.y = glyph.rect.size.y * scale
 			data.draw_glyph()
-			if data.char.char == "*" && _is_line_leading_char(data):
+			if data.user_char.character == "*" && _is_line_leading_char(data):
 				data.env.started_asterisk = true
 				# La posición previa al bullet ya incluye los TAB de la cadena
 				# (por ejemplo, "\t\t* Texto"). Guardarla hace que los wraps
 				# automáticos respeten la misma unidad de alineación que usa el TXT.
-				if data.char.position_offset.x > 0.0:
-					data.env.asterisk_indent_x = data.char.position_offset.x
+				if data.user_char.position_offset.x > 0.0:
+					data.env.asterisk_indent_x = data.user_char.position_offset.x
 				else:
 					# Sin TAB explícito, dejamos que el bloque de fallback aplique
 					# las celdas TAB tradicionales.
@@ -555,10 +555,10 @@ static func draw_glyph(data: IUserData) -> void:
 				# "*" (p. ej. "*Who's..."), y ahí el texto empieza justo 1 celda
 				# después del "*", no 2. Lo detectamos mirando el carácter que
 				# sigue al "*" en la cadena fuente.
-				if data.char.index + 1 < data.char.string.length() && data.char.string[data.char.index + 1] == " ":
+				if data.user_char.index + 1 < data.user_char.string.length() && data.user_char.string[data.user_char.index + 1] == " ":
 					data.env.asterisk_prefix_width_cells = ASTERISK_PREFIX_WIDTH_CELLS
 				else:
 					data.env.asterisk_prefix_width_cells = ASTERISK_PREFIX_WIDTH_CELLS - 1.0
-			data.char.position_offset.x += ((data.env._sx if data.env._sx != -1 else glyph.shift) + glyph.offset) * scale * (TAB_WIDTH_IN_SPACE_CELLS if data.char.char == "\t" else 1.0)
+			data.user_char.position_offset.x += ((data.env._sx if data.env._sx != -1 else glyph.shift) + glyph.offset) * scale * (TAB_WIDTH_IN_SPACE_CELLS if data.user_char.character == "\t" else 1.0)
 			data.env.last_newline = false
 			data.env.first_drawn_char = false

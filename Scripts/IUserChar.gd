@@ -1,8 +1,8 @@
 extends RefCounted
 class_name IUserChar
 
-@warning_ignore("shadowed_global_identifier")
-var char := "" # 1-letter String "layer_string[layer][index]" [READ ONLY]
+
+var character := "" # 1-letter String "layer_string[layer][index]" [READ ONLY]
 var index := -1 # Char index contained in the current layer string "layer_string[layer]" [READ ONLY]
 var string := "" # The current layer string
 

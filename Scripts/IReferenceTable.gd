@@ -150,28 +150,28 @@ func _parse_csv(text: String) -> Array:
 	var in_quotes := false
 	var i := 0
 	while i < text.length():
-		var character := text.substr(i, 1)
+		var user_char := text.substr(i, 1)
 		if in_quotes:
-			if character == "\"":
+			if user_char == "\"":
 				if i + 1 < text.length() and text.substr(i + 1, 1) == "\"":
 					cell_text += "\""
 					i += 1
 				else:
 					in_quotes = false
 			else:
-				cell_text += character
+				cell_text += user_char
 		else:
-			if character == "\"":
+			if user_char == "\"":
 				in_quotes = true
-			elif character == ",":
+			elif user_char == ",":
 				row.append(cell_text)
 				cell_text = ""
-			elif character == "\n":
+			elif user_char == "\n":
 				row.append(cell_text)
 				rows.append(row)
 				row = []
 				cell_text = ""
-			elif character == "\r":
+			elif user_char == "\r":
 				row.append(cell_text)
 				rows.append(row)
 				row = []
@@ -179,7 +179,7 @@ func _parse_csv(text: String) -> Array:
 				if i + 1 < text.length() and text.substr(i + 1, 1) == "\n":
 					i += 1
 			else:
-				cell_text += character
+				cell_text += user_char
 		i += 1
 	if in_quotes:
 		last_error = "Malformed reference CSV: a quoted cell was not closed."

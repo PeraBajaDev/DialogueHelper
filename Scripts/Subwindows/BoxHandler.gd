@@ -80,7 +80,7 @@ func _clean_preview_text(s: String) -> String:
 	# un ~n al inicio se convertía en TAB y desaparecía; ahora ~1, ~2, etc.
 	# se dibujan y ocupan el ancho real de sus glifos en cualquier posición.
 	return s
-	
+
 func _draw() -> void:
 	custom_minimum_size = Vector2.ZERO
 	if Handle.font_data.is_empty():
@@ -101,7 +101,7 @@ func _draw() -> void:
 		var env := {}
 		var ls := Handle.layer_strings.duplicate()
 		var lc := Handle.layer_colors.duplicate()
-		
+
 		var data := IUserData.new()
 		data.__parent = self
 		data.env = env
@@ -109,14 +109,14 @@ func _draw() -> void:
 		data.glyph.layer_strings = ls
 		data.glyph.layer_colors = lc
 		data.glyph.vscale = Handle.visual_scale
-		data.char.start_position.x = last_pos.x
-		data.char.start_position.y = last_pos.y
+		data.user_char.start_position.x = last_pos.x
+		data.user_char.start_position.y = last_pos.y
 		if Handle.user_script_obj.has_method("prepare_draw"):
 			@warning_ignore("unsafe_method_access")
 			Handle.user_script_obj.prepare_draw(data)
 		for _layer in range(Handle.layer_strings.size()):
 			data.glyph.current_layer = _layer
-			data.char.position_offset = Vector2.ZERO
+			data.user_char.position_offset = Vector2.ZERO
 			var index := 0
 			var current_string: String = Handle.layer_strings[_layer]
 
@@ -132,36 +132,36 @@ func _draw() -> void:
 				data.font = Handle.font_data[Handle.current_font]
 				data.box = Handle.box_data[box.current_box]
 				#
-				data.char.char = _layer_char
-				data.char.glyph = Rect2()
-				data.char.index = index
-				data.char.string = current_string
+				data.user_char.character = _layer_char
+				data.user_char.glyph = Rect2()
+				data.user_char.index = index
+				data.user_char.string = current_string
 
 				# Si es cualquiera de los placeholders de backtick-escape, rehidratamos
 				# al char literal y levantamos is_escaped para que el script del estilo
 				# salte TODA su lógica de interpretación (/, ^, %, \, &, skip...).
 				var escaped_to: String = PLACEHOLDER_TO_CHAR.get(_layer_char, "")
 				if escaped_to != "":
-					data.char.char = escaped_to
-					data.char.is_newline = false
-					data.char.is_ignore = false
-					data.char.is_escaped = true
+					data.user_char.character = escaped_to
+					data.user_char.is_newline = false
+					data.user_char.is_ignore = false
+					data.user_char.is_escaped = true
 				else:
-					data.char.is_escaped = false
+					data.user_char.is_escaped = false
 					# --- Lógica normal para is_newline
 					if Handle.style_metadata.has("NewLines"):
 						var is_newline: bool = (Handle.style_metadata.NewLines as Array).has(_layer_char)
-						data.char.is_newline = is_newline
+						data.user_char.is_newline = is_newline
 					# Mantener la lógica de "Ignore" del style (sin sobreescribir si ya es true)
 					if Handle.style_metadata.has("Ignore"):
-						data.char.is_ignore = data.char.is_ignore or (Handle.style_metadata.Ignore as Array).has(_layer_char)
-				
+						data.user_char.is_ignore = data.user_char.is_ignore or (Handle.style_metadata.Ignore as Array).has(_layer_char)
+
 				if Handle.user_script_obj.has_method("draw_glyph"):
 					@warning_ignore("unsafe_method_access")
 					Handle.user_script_obj.draw_glyph(data)
 				index += 1
 		if Handle.user_script_obj.has_method("draw_portrait") && Handle.main_node.box.portrait_enabled && Handle.main_node.box.supports_portrait:
-			data.char = null
+			data.user_char = null
 			@warning_ignore("unsafe_method_access")
 			Handle.user_script_obj.draw_portrait(data)
 		queue_update_secs = data.queue_update_secs
@@ -173,7 +173,7 @@ func _draw() -> void:
 						custom_minimum_size.x = spr.position.x + (spr.texture.get_width() * spr.scale.x)
 					if spr.position.y + (spr.texture.get_height() * spr.scale.y) > custom_minimum_size.y:
 						custom_minimum_size.y = spr.position.y + (spr.texture.get_height() * spr.scale.y)
-						
+
 		# Si el retrato está activo, retrasar la aparición de la barra horizontal unos px
 		if box.portrait_enabled and box.supports_portrait:
 			custom_minimum_size.x = max(0.0, custom_minimum_size.x - 8.0)
