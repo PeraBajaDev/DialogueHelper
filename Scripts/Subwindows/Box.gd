@@ -3,7 +3,7 @@ class_name WBox
 
 @export var current_box := 0
 var portrait_enabled := false
-@onready var spr: Sprite2D = $Handler/BoxSprite
+@onready var sprite: Sprite2D = $Handler/BoxSprite
 @onready var handle: BoxHandler = $Handler
 
 var supports_portrait := false
@@ -37,8 +37,8 @@ func _process(_delta: float) -> void:
 	_last_applied_box_data_size = box_data_size
 
 	var box: IBox = Handle.box_data[current_box]
-	if spr.texture != box.texture:
-		spr.texture = box.texture
+	if sprite.texture != box.texture:
+		sprite.texture = box.texture
 	supports_portrait = box.supports_portrait
 	dialogue_offset = box.dialogue_offset
 	portrait_offset = box.portrait_offset

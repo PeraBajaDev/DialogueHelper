@@ -376,7 +376,7 @@ func _process(_delta: float) -> void:
 		Handle.is_modified = true
 		Handle.visual_scale = current_scale_node.value
 		box.handle.queue_redraw()
-		box.spr.scale = Vector2(Handle.visual_scale, Handle.visual_scale)
+		box.sprite.scale = Vector2(Handle.visual_scale, Handle.visual_scale)
 		_request_scale_save()
 	while Handle.layer_strings.size() < Handle.layers:
 		Handle.layer_strings.append("")
