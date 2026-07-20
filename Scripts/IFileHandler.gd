@@ -49,8 +49,8 @@ func load_file(path: String, override_path: String = "", override_modified: bool
 	# Los dos parámetros opcionales controlan ese caso. Para una carga
 	# normal se dejan en sus defaults.
 	Handle.main_node.clear_data()
-	var cthr := Thread.new()
-	cthr.start(func() -> void:
+	var current_thread := Thread.new()
+	current_thread.start(func() -> void:
 		var cleanup_on_fail := func() -> void:
 			if Handle.loading_window != null:
 				Handle.loading_window.call_deferred("queue_free")
@@ -97,35 +97,35 @@ func load_file(path: String, override_path: String = "", override_modified: bool
 		# Cacheo de similar entries en estructuras LOCALES.
 		var local_string_sstr := {}
 		var local_string_sstr_arr: Array[Array] = []
-		var eqstr := {}
-		var eqstrarr := []
-		var v := 0
+		var equal_strings := {}
+		var equal_strings_array := []
+		var progress := 0
 		Handle.loading_window.label.set_text.call_deferred("Caching similar entries... [This may take a long time.]")
 		Handle.loading_window.progress_bar.set_value.call_deferred(0)
 		Handle.loading_window.progress_bar.set_max.call_deferred(local_string_table.size() * 2)
 		for entry: int in local_string_table.keys():
 			var string_container: IStringContainer = local_string_table[entry].data
-			if !eqstr.has(string_container.original_content):
-				eqstr[string_container.original_content] = eqstrarr.size()
-				var arr: Array[int] = [string_container.id]
-				string_container.equal_strings = arr
-				eqstrarr.append(arr)
+			if !equal_strings.has(string_container.original_content):
+				equal_strings[string_container.original_content] = equal_strings_array.size()
+				var array: Array[int] = [string_container.id]
+				string_container.equal_strings = array
+				equal_strings_array.append(array)
 			else:
-				var arr: Array[int] = eqstrarr[eqstr[string_container.original_content]]
-				arr.append(string_container.id)
-				string_container.equal_strings = arr
-			v += 1
-			Handle.loading_window.progress_bar.set_value.call_deferred(v)
-		for key: String in eqstr.keys():
-			var entries: Array = eqstrarr[eqstr[key]]
+				var array: Array[int] = equal_strings_array[equal_strings[string_container.original_content]]
+				array.append(string_container.id)
+				string_container.equal_strings = array
+			progress += 1
+			Handle.loading_window.progress_bar.set_value.call_deferred(progress)
+		for key: String in equal_strings.keys():
+			var entries: Array = equal_strings_array[equal_strings[key]]
 			if entries.size() > 1:
 				var index := local_string_sstr_arr.size()
 				local_string_sstr[key] = index
 				local_string_sstr_arr.append(entries)
 				for entry: int in entries:
 					(local_string_table[entry] as IStringTable).data.equal_strings_index = index
-			v += 1
-			Handle.loading_window.progress_bar.set_value.call_deferred(v)
+			progress += 1
+			Handle.loading_window.progress_bar.set_value.call_deferred(progress)
 
 		# Vuelco atómico (desde el punto de vista del main): todo en un único
 		# call_deferred. Cuando este lambda corra, el main verá Handle.* coherente.
@@ -174,7 +174,7 @@ func load_file(path: String, override_path: String = "", override_modified: bool
 				Handle.main_node._show_load_warning(warning_message)
 		commit.call_deferred()
 	)
-	return cthr
+	return current_thread
 
 func _select_first_entry() -> void:
 	if Handle.main_node == null:
@@ -227,14 +227,14 @@ func load_file_data(path: String, apply_settings := true, is_thread := false) ->
 		# (error=OK, strings={}, entry_names=[], etc.).
 		return file_loader
 
-	var arr := FileFormat.parse_file(data)
-	if arr.is_empty():
+	var array := FileFormat.parse_file(data)
+	if array.is_empty():
 		file_loader.error = ERR_PARSE_ERROR
 		file_loader.error_message = "File could not be parsed (no recognizable lines):\n%s" % path
 		return file_loader
 
 	if is_thread:
-		Handle.loading_window.progress_bar.set_max.call_deferred(arr.size())
+		Handle.loading_window.progress_bar.set_max.call_deferred(array.size())
 
 	var total := 0
 	var current_entry := ""
@@ -242,7 +242,7 @@ func load_file_data(path: String, apply_settings := true, is_thread := false) ->
 	var is_entry := false
 	var malformed_count := 0  # contamos líneas raras para reportar al final
 
-	for _line: IFormatEntry in arr:
+	for _line: IFormatEntry in array:
 		if (_line.kind == 0 || _line.kind == 8) && is_entry:
 			strings[current_entry] = entries
 			entries = []
@@ -372,7 +372,7 @@ func _save_git_phase2_resolve(path: String, pull_ok: bool, conflicts: Array) -> 
 # El autosave lo ignora.
 func _build_save_payload(progress_cb: Callable = Callable()) -> Array:
 	var data: Array = []
-	var v: int = 0
+	var progress: int = 0
 	var format_entry := IFormatEntry.new()
 	format_entry.kind = 9
 	format_entry.data.Style = Handle.style
@@ -385,8 +385,8 @@ func _build_save_payload(progress_cb: Callable = Callable()) -> Array:
 		for entry: IStringContainer in Handle.strings[key] as Array:
 			data.append(str(entry))
 			if progress_cb.is_valid():
-				progress_cb.call(v)
-			v += 1
+				progress_cb.call(progress)
+			progress += 1
 	format_entry = IFormatEntry.new()
 	format_entry.kind = 8
 	data.append(str(format_entry))
@@ -405,8 +405,8 @@ func _save_phase_write(path: String) -> void:
 			total_strings += (Handle.strings[key_count] as Array).size()
 		Handle.saving_window.progress_bar.set_max.call_deferred(total_strings)
 		Handle.saving_window.progress_bar.set_value.call_deferred(0)
-		var data := _build_save_payload(func(v: int) -> void:
-			Handle.saving_window.progress_bar.set_value.call_deferred(v)
+		var data := _build_save_payload(func(progress: int) -> void:
+			Handle.saving_window.progress_bar.set_value.call_deferred(progress)
 		)
 		Handle.saving_window.label.set_text.call_deferred("Saving the file...")
 		var ok := _write_data(path, data)
@@ -482,17 +482,17 @@ func _write_data(path: String, data: Array) -> bool:
 
 	# Camino atómico para archivos existentes: escribir a .tmp y renombrar.
 	var tmp_path := path + ".tmp"
-	var file := FileAccess.open(tmp_path, FileAccess.WRITE)
-	if file == null:
+	var tmp_file := FileAccess.open(tmp_path, FileAccess.WRITE)
+	if tmp_file == null:
 		var error := FileAccess.get_open_error()
 		push_error("Failed to open %s for writing (error %d)" % [tmp_path, error])
 		Handle.saving_window.label.set_text.call_deferred(
 			"Error: could not save to\n%s\n(error %d)" % [path, error]
 		)
 		return false
-	file.store_string(payload)
-	file.flush()
-	file.close()
+	tmp_file.store_string(payload)
+	tmp_file.flush()
+	tmp_file.close()
 
 	var rename_error := DirAccess.rename_absolute(tmp_path, path)
 	if rename_error != OK:

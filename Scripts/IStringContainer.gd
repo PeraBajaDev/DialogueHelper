@@ -10,7 +10,7 @@ var layer_colors: Array[Color] = []
 var box_style := 0
 var font_style := 0
 var enable_portrait := false
-var clave := ""  # Nueva propiedad para almacenar Clave
+var key := ""  # Nueva propiedad para almacenar Clave
 var speaker := ""  # Nuevo: almacena el campo Speaker del .txt
 
 # Bloque 2: marcador "necesita revisión". Persiste en el .txt sólo cuando
@@ -68,7 +68,7 @@ func _init(json: IFormatEntry = null) -> void:
 	if json_data.has(&"EnablePortrait"):
 		enable_portrait = json_data.EnablePortrait as bool
 	if json_data.has(&"Clave"):
-		clave = str(json_data.Clave)
+		key = str(json_data.Clave)
 	if json_data.has(&"Speaker"):
 		speaker = str(json_data.Speaker)
 	if json_data.has(&"NeedsReview"):
@@ -77,8 +77,8 @@ func _init(json: IFormatEntry = null) -> void:
 		# "true" en archivos guardados con versiones intermedias) sólo se
 		# mira para detectar un explícito "false" que podría dejar alguien
 		# editando a mano.
-		var nr_raw := str(json_data.NeedsReview).to_lower().strip_edges()
-		needs_review = nr_raw != "false" and nr_raw != "0"
+		var needs_review_raw := str(json_data.NeedsReview).to_lower().strip_edges()
+		needs_review = needs_review_raw != "false" and needs_review_raw != "0"
 
 	#if json_data.has(&"EqualStringsIndex"):
 	#	equal_strings_index = json_data.EqualStringsIndex as int
@@ -99,20 +99,20 @@ func _to_string() -> String:
 	if !&"".join(PackedStringArray(layer_strings.slice(1))).is_empty():
 		var ls: Array[String] = layer_strings.slice(1)
 		var last := 0
-		for _i in range(ls.size()):
-			if !ls[_i].is_empty():
-				last = _i + 1
+		for i in range(ls.size()):
+			if !ls[i].is_empty():
+				last = i + 1
 		entry.data.LayerStrings = &",".join(PackedStringArray(ls.slice(0, last)))
 
 	var lc := []
-	var lastc := 0
-	for _i in range(layer_colors.size()):
-		if layer_colors[_i] != Color.WHITE:
-			lastc = _i + 1
-		lc.append(String.num_uint64(layer_colors[_i].to_rgba32(), 16))
+	var last_color_index := 0
+	for i in range(layer_colors.size()):
+		if layer_colors[i] != Color.WHITE:
+			last_color_index = i + 1
+		lc.append(String.num_uint64(layer_colors[i].to_rgba32(), 16))
 
 	if !&"".join(PackedStringArray(lc)).replace(&"f", &"").is_empty():
-		entry.data.LayerColors = &",".join(PackedStringArray(lc.slice(0, lastc)))
+		entry.data.LayerColors = &",".join(PackedStringArray(lc.slice(0, last_color_index)))
 
 	if box_style != 0:
 		entry.data.BoxStyle = box_style
@@ -124,8 +124,8 @@ func _to_string() -> String:
 	#	entry.data.EqualStringsIndex = equal_strings_index
 
 	# Guardar Clave al final si existe
-	if clave != "":
-		entry.data.Clave = clave
+	if key != "":
+		entry.data.Clave = key
 
 
 	if speaker != "":

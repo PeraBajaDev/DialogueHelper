@@ -30,17 +30,17 @@ func _ready() -> void:
 	# Styles reales. Antes, cualquier carpeta dentro de res://Styles/ (incluso
 	# .git, temporales o basura del usuario) acababa como opción seleccionable
 	# y al elegirla load_style fallaba silenciosamente.
-	for _dir in Handle.list_available_styles():
-		var local_name := _dir
-		var style_metadata: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(Handle.style_get_path(&"Metadata.json", _dir)))
+	for directory in Handle.list_available_styles():
+		var local_name := directory
+		var style_metadata: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(Handle.style_get_path(&"Metadata.json", directory)))
 		if style_metadata == null:
-			logs.append("%s had a JSON parsing error." % Handle.style_get_relative_path(&"Metadata.json", _dir))
+			logs.append("%s had a JSON parsing error." % Handle.style_get_relative_path(&"Metadata.json", directory))
 			continue
 		elif style_metadata.has(&"Name"):
 			local_name = str(style_metadata.Name)
 		style_select.add_item(local_name, i)
-		folders[i] = _dir
-		if _dir == Handle.style:
+		folders[i] = directory
+		if directory == Handle.style:
 			style_select.select(i)
 		i += 1
 	if !logs.is_empty(): # An error ocurred.
@@ -108,43 +108,43 @@ func _on_ok_button_pressed() -> void:
 	# Si user:// está bloqueado (permisos, antivirus en Windows, disco lleno),
 	# la app crasheaba al llamar store_string/close sobre un null. Skip silencioso
 	# es el mismo patrón defensivo que ya usa MainNode._save_recent_files.
-	var f := FileAccess.open(&"user://last_style.txt", FileAccess.WRITE)
-	if f != null:
-		f.store_string(style_select.get_item_text(style_select.selected))
-		f.flush()
-		f.close()
+	var last_style_file := FileAccess.open(&"user://last_style.txt", FileAccess.WRITE)
+	if last_style_file != null:
+		last_style_file.store_string(style_select.get_item_text(style_select.selected))
+		last_style_file.flush()
+		last_style_file.close()
 	if enable_git.button_pressed:
-		var ef := FileAccess.open(&"user://enable_git.bool", FileAccess.WRITE)
-		if ef != null:
-			ef.close()
-		f = FileAccess.open(&"user://git_url.txt", FileAccess.WRITE)
-		if f != null:
-			f.store_string(git_url.text.strip_edges())
-			f.flush()
-			f.close()
-		f = FileAccess.open(&"user://git_branch.txt", FileAccess.WRITE)
-		if f != null:
-			f.store_string(git_branch.text.strip_edges())
-			f.flush()
-			f.close()
+		var enable_git_file := FileAccess.open(&"user://enable_git.bool", FileAccess.WRITE)
+		if enable_git_file != null:
+			enable_git_file.close()
+		last_style_file = FileAccess.open(&"user://git_url.txt", FileAccess.WRITE)
+		if last_style_file != null:
+			last_style_file.store_string(git_url.text.strip_edges())
+			last_style_file.flush()
+			last_style_file.close()
+		last_style_file = FileAccess.open(&"user://git_branch.txt", FileAccess.WRITE)
+		if last_style_file != null:
+			last_style_file.store_string(git_branch.text.strip_edges())
+			last_style_file.flush()
+			last_style_file.close()
 		Handle.git.url = git_url.text.strip_edges()
 		Handle.git.branch = git_branch.text.strip_edges()
 		# Usamos la variante estática para no depender de DirAccess.open
 		# (que devuelve null si user:// no se puede abrir, y .dir_exists()
 		# sobre null crashearía).
 		if !DirAccess.dir_exists_absolute("user://repo/"):
-			var r := Handle.git.clone()
-			Handle.handle_git_output.call_deferred(r)
-			if !r.success:
+			var clone_response := Handle.git.clone()
+			Handle.handle_git_output.call_deferred(clone_response)
+			if !clone_response.success:
 				return
 		else:
-			var r := Handle.git.set_url()
-			Handle.handle_git_output.call_deferred(r)
-			if !r.success:
+			var set_url_response := Handle.git.set_url()
+			Handle.handle_git_output.call_deferred(set_url_response)
+			if !set_url_response.success:
 				return
-			r = Handle.git.pull()
-			Handle.handle_git_output.call_deferred(r)
-			if !r.success:
+			var pull_response := Handle.git.pull()
+			Handle.handle_git_output.call_deferred(pull_response)
+			if !pull_response.success:
 				return
 	else:
 		if FileAccess.file_exists(&"user://enable_git.bool"):

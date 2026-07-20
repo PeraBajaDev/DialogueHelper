@@ -54,11 +54,11 @@ func _on_ok_button_pressed() -> void:
 
 	# Persistimos la elección. La próxima vez que arranque la app, el bloque
 	# de "primer arranque" no se ejecutará y se respetará esta preferencia.
-	var f := FileAccess.open("user://last_style.txt", FileAccess.WRITE)
-	if f != null:
-		f.store_string(folder)
-		f.flush()
-		f.close()
+	var last_style_file := FileAccess.open("user://last_style.txt", FileAccess.WRITE)
+	if last_style_file != null:
+		last_style_file.store_string(folder)
+		last_style_file.flush()
+		last_style_file.close()
 	queue_free()
 
 func _on_cancel_button_pressed() -> void:

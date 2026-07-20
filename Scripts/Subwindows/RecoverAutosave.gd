@@ -10,10 +10,10 @@ signal recover_requested()
 signal discard_requested()
 
 var message: String = "":
-	set(v):
-		message = v
+	set(value):
+		message = value
 		if is_inside_tree():
-			($Label as Label).text = v
+			($Label as Label).text = value
 
 func _ready() -> void:
 	($Label as Label).text = message

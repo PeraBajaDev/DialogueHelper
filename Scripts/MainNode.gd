@@ -419,45 +419,45 @@ func _process(_delta: float) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey):
 		return
-	var ke: InputEventKey = event
-	if not ke.pressed or ke.echo:
+	var key_event: InputEventKey = event
+	if not key_event.pressed or key_event.echo:
 		return
 	# Exigimos Ctrl, pero NO Alt ni Meta (evita colisiones con atajos del SO).
-	if not ke.ctrl_pressed or ke.alt_pressed or ke.meta_pressed:
+	if not key_event.ctrl_pressed or key_event.alt_pressed or key_event.meta_pressed:
 		return
 	# Si hay una operación de disco en curso, ignoramos los atajos.
 	if _io_busy():
 		return
 
-	match ke.keycode:
+	match key_event.keycode:
 		KEY_S:
-			if ke.shift_pressed:
+			if key_event.shift_pressed:
 				save_as_flow()
 			else:
 				save_file_flow()
 			get_viewport().set_input_as_handled()
 		KEY_O:
-			if ke.shift_pressed:
+			if key_event.shift_pressed:
 				return
 			open_file_flow()
 			get_viewport().set_input_as_handled()
 		KEY_W:
-			if ke.shift_pressed:
+			if key_event.shift_pressed:
 				return
 			close_file_flow()
 			get_viewport().set_input_as_handled()
 		KEY_Q:
-			if ke.shift_pressed:
+			if key_event.shift_pressed:
 				return
 			quit_flow()
 			get_viewport().set_input_as_handled()
 		KEY_F:
-			if ke.shift_pressed:
+			if key_event.shift_pressed:
 				return
 			open_search_menu()
 			get_viewport().set_input_as_handled()
 		KEY_G:
-			if ke.shift_pressed:
+			if key_event.shift_pressed:
 				return
 			open_go_to_menu()
 			get_viewport().set_input_as_handled()
@@ -483,31 +483,31 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _input(event: InputEvent) -> void:
 	if not (event is InputEventKey):
 		return
-	var ke: InputEventKey = event
-	if not ke.pressed:
+	var key_event: InputEventKey = event
+	if not key_event.pressed:
 		return
 	# OJO: aquí NO filtramos ke.echo. Godot marca como echo los eventos
 	# repetidos al mantener pulsada una tecla; dejarlos pasar es justo lo
 	# que permite mantener Ctrl/Alt + ↑/↓ para navegar rápido. Los atajos
 	# de menú (Ctrl+S/O/etc.) siguen filtrando echo en _unhandled_key_input.
 	# Solo nos interesan ↑/↓; cualquier otra tecla se deja pasar intacta.
-	if ke.keycode != KEY_UP and ke.keycode != KEY_DOWN:
+	if key_event.keycode != KEY_UP and key_event.keycode != KEY_DOWN:
 		return
 	# Meta (tecla Win/Cmd) no se usa aquí: evita colisiones con atajos del SO.
-	if ke.meta_pressed:
+	if key_event.meta_pressed:
 		return
 	# Modificadores EXCLUSIVOS: Ctrl-solo mueve strings; Alt-solo mueve entries.
 	# Cualquier otra combinación (Shift de por medio, los dos a la vez, o ninguno)
 	# no hace nada y deja pasar el evento, para no romper la edición/selección
 	# normal del texto.
-	var only_ctrl: bool = ke.ctrl_pressed and not ke.alt_pressed and not ke.shift_pressed
-	var only_alt: bool = ke.alt_pressed and not ke.ctrl_pressed and not ke.shift_pressed
+	var only_ctrl: bool = key_event.ctrl_pressed and not key_event.alt_pressed and not key_event.shift_pressed
+	var only_alt: bool = key_event.alt_pressed and not key_event.ctrl_pressed and not key_event.shift_pressed
 	if not (only_ctrl or only_alt):
 		return
 	# Si hay una operación de disco en curso, ignoramos los atajos.
 	if _io_busy():
 		return
-	var delta: int = -1 if ke.keycode == KEY_UP else 1
+	var delta: int = -1 if key_event.keycode == KEY_UP else 1
 	if only_ctrl:
 		_nav_string(delta)
 	else:
@@ -562,9 +562,9 @@ func _nav_entry(delta: int) -> void:
 	if sel.size() > 0:
 		cur = sel[0]
 	else:
-		for _i in count:
-			if dialogue_selector_entry_at(_i) == current_entry:
-				cur = _i
+		for i in count:
+			if dialogue_selector_entry_at(i) == current_entry:
+				cur = i
 				break
 	var new: int
 	if cur == -1:
@@ -657,9 +657,9 @@ func _show_style_picker() -> void:
 # que NO son una pulsación del usuario (cambio de string, cambio de capa,
 # clear_data...). Sin esto, esas asignaciones disparan text_changed y
 # is_modified termina marcado a true por nada.
-func _set_dialogue_edit_text_silent(t: String) -> void:
+func _set_dialogue_edit_text_silent(text: String) -> void:
 	_suppress_text_signal = true
-	dialogue_edit.text = t
+	dialogue_edit.text = text
 	_suppress_text_signal = false
 
 # ---------------------------------------------------------------------------
@@ -700,7 +700,7 @@ func _strip_progress_prefix(text: String) -> String:
 
 # Wrapper público: devuelve el nombre real (sin prefijo) del item del
 # dialogue_selector en el índice indicado. Es el equivalente "limpio" de
-# `dialogue_selector_entry_at(_i)` y debe usarse siempre que el valor
+# `dialogue_selector_entry_at(i)` y debe usarse siempre que el valor
 # se vaya a buscar en Handle.strings o comparar con un nombre real.
 func dialogue_selector_entry_at(index: int) -> String:
 	if index < 0 or index >= dialogue_selector.get_item_count():
@@ -710,8 +710,8 @@ func dialogue_selector_entry_at(index: int) -> String:
 func _entry_progress_prefix(entry_local_name: String) -> String:
 	if not Handle.strings.has(entry_local_name):
 		return _PROGRESS_PREFIX_EMPTY
-	var arr: Array = Handle.strings[entry_local_name]
-	if arr.is_empty():
+	var array: Array = Handle.strings[entry_local_name]
+	if array.is_empty():
 		return _PROGRESS_PREFIX_EMPTY
 	# Bloque 2: prioridad de prefijo (mismo orden que _state_to_prefix).
 	# Tag mismatch tiene prioridad sobre review porque es un problema
@@ -719,7 +719,7 @@ func _entry_progress_prefix(entry_local_name: String) -> String:
 	var has_mismatch: bool = false
 	var has_review: bool = false
 	var has_unclosed_sign: bool = false
-	for _stri: IStringContainer in arr:
+	for _stri: IStringContainer in array:
 		if _string_has_tag_mismatch(_stri):
 			has_mismatch = true
 			break  # No hace falta seguir, mismatch ya gana
@@ -736,15 +736,15 @@ func _entry_progress_prefix(entry_local_name: String) -> String:
 		return _PROGRESS_PREFIX_DONE
 	return _PROGRESS_PREFIX_TODO
 
-func _string_progress_prefix(stri: IStringContainer) -> String:
+func _string_progress_prefix(string_container: IStringContainer) -> String:
 	# Misma prioridad que en entries: mismatch > review > done > todo.
-	if _string_has_tag_mismatch(stri):
+	if _string_has_tag_mismatch(string_container):
 		return _PROGRESS_PREFIX_WARN
-	if stri != null and stri.needs_review:
+	if string_container != null and string_container.needs_review:
 		return _PROGRESS_PREFIX_REVIEW
-	if _string_has_misclosed_sign(stri):
+	if _string_has_misclosed_sign(string_container):
 		return _PROGRESS_PREFIX_UNCLOSED_SIGN
-	if Handle.is_string_translated(stri):
+	if Handle.is_string_translated(string_container):
 		return _PROGRESS_PREFIX_DONE
 	return _PROGRESS_PREFIX_TODO
 
@@ -752,42 +752,42 @@ func _string_progress_prefix(stri: IStringContainer) -> String:
 # relevantes (en original o en traducción). Una string sin tags no se
 # considera "mismatch" — `validate_string` devuelve ok=true igualmente,
 # pero centralizamos aquí por claridad.
-func _string_has_tag_mismatch(stri: IStringContainer) -> bool:
-	if stri == null:
+func _string_has_tag_mismatch(string_container: IStringContainer) -> bool:
+	if string_container == null:
 		return false
-	var diff := ITagValidator.validate_string(stri)
+	var diff := ITagValidator.validate_string(string_container)
 	return not diff.ok
 
-func _string_has_misclosed_sign(stri: IStringContainer) -> bool:
-	if stri == null:
+func _string_has_misclosed_sign(string_container: IStringContainer) -> bool:
+	if string_container == null:
 		return false
-	var diff := IClosedSignValidator.validate_string(stri)
+	var diff := IClosedSignValidator.validate_string(string_container)
 	return not diff.ok
 # Recalcula el prefijo del item de dialogue_selector que corresponde a la
 # entry indicada. Si por algún motivo no se encuentra, no hace nada.
 func refresh_entry_item_prefix(entry_local_name: String) -> void:
 	if dialogue_selector == null:
 		return
-	for _i in range(dialogue_selector.get_item_count()):
-		var txt := _strip_progress_prefix(dialogue_selector.get_item_text(_i))
+	for i in range(dialogue_selector.get_item_count()):
+		var txt := _strip_progress_prefix(dialogue_selector.get_item_text(i))
 		if txt == entry_local_name:
-			dialogue_selector.set_item_text(_i, _entry_progress_prefix(entry_local_name) + entry_local_name)
+			dialogue_selector.set_item_text(i, _entry_progress_prefix(entry_local_name) + entry_local_name)
 			return
 
 # Recalcula el prefijo de un item del string_selector. La string vista en el
 # selector usa _stri.content como texto.
-func refresh_string_item_prefix(index: int, stri: IStringContainer) -> void:
+func refresh_string_item_prefix(index: int, string_container: IStringContainer) -> void:
 	if string_selector == null or index < 0 or index >= string_selector.get_item_count():
 		return
-	string_selector.set_item_text(index, _string_progress_prefix(stri) + stri.content)
+	string_selector.set_item_text(index, _string_progress_prefix(string_container) + string_container.content)
 
 # Refresca todos los items de dialogue_selector. Útil tras cargar un archivo.
 func refresh_all_entry_prefixes() -> void:
 	if dialogue_selector == null:
 		return
-	for _i in range(dialogue_selector.get_item_count()):
-		var local_name := _strip_progress_prefix(dialogue_selector.get_item_text(_i))
-		dialogue_selector.set_item_text(_i, _entry_progress_prefix(local_name) + local_name)
+	for i in range(dialogue_selector.get_item_count()):
+		var local_name := _strip_progress_prefix(dialogue_selector.get_item_text(i))
+		dialogue_selector.set_item_text(i, _entry_progress_prefix(local_name) + local_name)
 
 # Label de estadísticas globales: "1234 / 5678 strings (21.7%)"
 func update_progress_stats_label() -> void:
@@ -814,12 +814,12 @@ func update_progress_stats_label() -> void:
 func update_tag_validator_label() -> void:
 	if tag_validator_label == null:
 		return
-	var stri := _get_current_string_container()
-	if stri == null:
+	var string_container := _get_current_string_container()
+	if string_container == null:
 		tag_validator_label.text = ""
 		tag_validator_label.tooltip_text = ""
 		return
-	var diff := ITagValidator.validate_string(stri)
+	var diff := ITagValidator.validate_string(string_container)
 	# Bloque 2: si NI el original NI la traducción contienen tags, el panel
 	# se queda vacío. Mostrar "✓ Tags OK" en cada línea de texto plano sólo
 	# añade ruido visual sin informar de nada útil. El panel sólo aparece
@@ -841,14 +841,14 @@ func update_tag_validator_label() -> void:
 func update_closed_sign_validator_label() -> void:
 	if closed_sign_validator_label == null:
 		return
-	var stri := _get_current_string_container()
+	var string_container := _get_current_string_container()
 
-	if stri == null:
+	if string_container == null:
 		closed_sign_validator_label.text = ""
 		closed_sign_validator_label.tooltip_text = ""
 		return
 
-	var diff := IClosedSignValidator.validate_string(stri)
+	var diff := IClosedSignValidator.validate_string(string_container)
 	if not diff.has_any_sign:
 		closed_sign_validator_label.text = ""
 		closed_sign_validator_label.tooltip_text = ""
@@ -869,13 +869,13 @@ func update_closed_sign_validator_label() -> void:
 func update_needs_review_check() -> void:
 	if needs_review_check == null:
 		return
-	var stri := _get_current_string_container()
-	if stri == null:
+	var string_container := _get_current_string_container()
+	if string_container == null:
 		needs_review_check.set_pressed_no_signal(false)
 		needs_review_check.disabled = true
 		return
 	needs_review_check.disabled = false
-	needs_review_check.set_pressed_no_signal(stri.needs_review)
+	needs_review_check.set_pressed_no_signal(string_container.needs_review)
 
 # Devuelve el IStringContainer actualmente cargado en el editor, o null.
 # Bug fix (decoupling): leía dialogue_selector + string_selector, lo que daba
@@ -887,18 +887,18 @@ func _get_current_string_container() -> IStringContainer:
 		return null
 	if not Handle.strings.has(current_entry):
 		return null
-	var arr: Array = Handle.strings[current_entry]
-	if current_string_index >= arr.size():
+	var array: Array = Handle.strings[current_entry]
+	if current_string_index >= array.size():
 		return null
-	return arr[current_string_index]
+	return array[current_string_index]
 
 func _on_needs_review_toggled(pressed: bool) -> void:
-	var stri := _get_current_string_container()
-	if stri == null:
+	var string_container := _get_current_string_container()
+	if string_container == null:
 		return
-	if stri.needs_review == pressed:
+	if string_container.needs_review == pressed:
 		return  # Ya estaba en ese estado (sync programático).
-	stri.needs_review = pressed
+	string_container.needs_review = pressed
 	Handle.is_modified = true
 	# Refrescar el ítem actual del string_selector y el de la entry.
 	# Bug fix (decoupling): leemos current_entry/current_string_index, que es
@@ -907,7 +907,7 @@ func _on_needs_review_toggled(pressed: bool) -> void:
 	# entry; refresh_string_item_prefix sí actualiza porque string_selector
 	# siempre refleja current_entry.
 	if current_string_index >= 0:
-		refresh_string_item_prefix(current_string_index, stri)
+		refresh_string_item_prefix(current_string_index, string_container)
 	if current_entry != "":
 		refresh_entry_item_prefix(current_entry)
 
@@ -983,23 +983,23 @@ func open_file_flow() -> void:
 # después hacemos queue_free. Así Godot ya ha terminado de devolver el foco
 # a la ventana principal cuando el FileDialog desaparece.
 func _close_fd_window_deferred() -> void:
-	var w: FileDialog = Handle.file_dialog_window
+	var window: FileDialog = Handle.file_dialog_window
 	Handle.file_dialog_window = null
-	if not is_instance_valid(w):
+	if not is_instance_valid(window):
 		return
-	var t := create_tween()
-	t.tween_callback(func() -> void:
-		if is_instance_valid(w):
-			w.queue_free()
+	var tween := create_tween()
+	tween.tween_callback(func() -> void:
+		if is_instance_valid(window):
+			window.queue_free()
 	).set_delay(1.0 / 60.0)
-	t.play()
+	tween.play()
 
 func _launch_load_thread(path: String) -> void:
 	# A reference CSV belongs to the currently opened .txt only. Opening another
 	# file should start with a clean reference panel.
 	clear_reference_csv()
-	var t := create_tween()
-	t.tween_callback(func() -> void:
+	var tween := create_tween()
+	tween.tween_callback(func() -> void:
 		if Handle.file_dialog_window != null:
 			Handle.file_dialog_window.free()
 			Handle.file_dialog_window = null
@@ -1007,7 +1007,7 @@ func _launch_load_thread(path: String) -> void:
 		add_child(Handle.loading_window)
 		last_thread = IFileHandler.load_file(path)
 	).set_delay(1.0 / 60.0)
-	t.play()
+	tween.play()
 
 # Ctrl+S: si ya hay una ruta conocida y el archivo existe, guarda directo.
 # En caso contrario, se comporta como Save As.
@@ -1054,16 +1054,16 @@ func _close_fds_window_deferred() -> void:
 	Handle.save_file_window = null
 	if not is_instance_valid(w):
 		return
-	var t := create_tween()
-	t.tween_callback(func() -> void:
+	var tween := create_tween()
+	tween.tween_callback(func() -> void:
 		if is_instance_valid(w):
 			w.queue_free()
 	).set_delay(1.0 / 60.0)
-	t.play()
+	tween.play()
 
 func _launch_save_thread(path: String) -> void:
-	var t := create_tween()
-	t.tween_callback(func() -> void:
+	var tween := create_tween()
+	tween.tween_callback(func() -> void:
 		if Handle.save_file_window != null:
 			Handle.save_file_window.free()
 			Handle.save_file_window = null
@@ -1073,7 +1073,7 @@ func _launch_save_thread(path: String) -> void:
 		# IFileHandler.io_in_progress, consultado por _io_busy().
 		IFileHandler.save_file(path)
 	).set_delay(1.0 / 60.0)
-	t.play()
+	tween.play()
 
 func new_file_flow() -> void:
 	if _io_busy():
@@ -1272,12 +1272,12 @@ func _close_fdj_window_deferred() -> void:
 	_fdj_window = null
 	if not is_instance_valid(w):
 		return
-	var t := create_tween()
-	t.tween_callback(func() -> void:
+	var tween := create_tween()
+	tween.tween_callback(func() -> void:
 		if is_instance_valid(w):
 			w.queue_free()
 	).set_delay(1.0 / 60.0)
-	t.play()
+	tween.play()
 
 # Construye el dict {clave: valor} y lo escribe como JSON indentado.
 # Itera Handle.entry_names para respetar el orden de inserción del .txt.
@@ -1287,15 +1287,15 @@ func _do_export_json(path: String) -> void:
 	for _entry: String in Handle.entry_names:
 		if not Handle.strings.has(_entry):
 			continue
-		for stri: IStringContainer in (Handle.strings[_entry] as Array):
-			if stri.clave == "":
+		for string_container: IStringContainer in (Handle.strings[_entry] as Array):
+			if string_container.key == "":
 				continue
 			# Convención "null": la cadena literal "null" se exporta como JSON null
 			# para que el round-trip sea idempotente con txt_a_json() de Python.
-			if stri.content == "null":
-				dict[stri.clave] = null
+			if string_container.content == "null":
+				dict[string_container.key] = null
 			else:
-				dict[stri.clave] = stri.content
+				dict[string_container.key] = string_container.content
 	var json_str: String = JSON.stringify(dict, "\t")
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f == null:
@@ -1578,13 +1578,13 @@ func delete_string_flow() -> void:
 	if not Handle.strings.has(current_entry):
 		return
 	var entry_local_name := current_entry
-	var arr: Array = Handle.strings[entry_local_name]
+	var array: Array = Handle.strings[entry_local_name]
 	var idx: int = current_string_index
-	if idx >= arr.size():
+	if idx >= array.size():
 		return
 	var w: WConfirmDelete = _CONFIRM_DELETE_SCENE.instantiate()
 	# Mostramos un trozo del contenido para que el usuario vea qué va a borrar.
-	var preview: String = (arr[idx] as IStringContainer).content
+	var preview: String = (array[idx] as IStringContainer).content
 	if preview.length() > 80:
 		preview = preview.substr(0, 77) + "..."
 	w.message = "Delete string %d of entry \"%s\"?\n\n\"%s\"\n\nThis cannot be undone after saving." % [idx + 1, entry_local_name, preview]
@@ -1600,8 +1600,8 @@ func _perform_delete_entry(entry_local_name: String) -> void:
 		return
 	var doomed_arr: Array = Handle.strings[entry_local_name]
 	var doomed_ids := []
-	for stri: IStringContainer in doomed_arr:
-		doomed_ids.append(stri.id)
+	for string_container: IStringContainer in doomed_arr:
+		doomed_ids.append(string_container.id)
 
 	# Quitar de todas las estructuras globales.
 	for id: int in doomed_ids:
@@ -1646,13 +1646,13 @@ func _perform_delete_entry(entry_local_name: String) -> void:
 func _perform_delete_string(entry_local_name: String, idx: int) -> void:
 	if not Handle.strings.has(entry_local_name):
 		return
-	var arr: Array = Handle.strings[entry_local_name]
-	if idx < 0 or idx >= arr.size():
+	var array: Array = Handle.strings[entry_local_name]
+	if idx < 0 or idx >= array.size():
 		return
-	var doomed: IStringContainer = arr[idx]
+	var doomed: IStringContainer = array[idx]
 	var doomed_id: int = doomed.id
 
-	arr.remove_at(idx)
+	array.remove_at(idx)
 	Handle.string_table.erase(doomed_id)
 	Handle.string_ids.erase(doomed_id)
 	_purge_ids_from_similar([doomed_id])
@@ -1661,8 +1661,8 @@ func _perform_delete_string(entry_local_name: String, idx: int) -> void:
 	# Las strings que estaban después en la misma entry tienen ahora un index
 	# menor. Hay que actualizar string_table para que sigan apuntando a la
 	# posición correcta dentro de la entry.
-	for i in range(idx, arr.size()):
-		var later: IStringContainer = arr[i]
+	for i in range(idx, array.size()):
+		var later: IStringContainer = array[i]
 		if Handle.string_table.has(later.id):
 			(Handle.string_table[later.id] as IStringTable).index = i
 
@@ -1673,8 +1673,8 @@ func _perform_delete_string(entry_local_name: String, idx: int) -> void:
 	# futuros flujos llaman a _perform_delete_string sobre otra entry.)
 	if entry_local_name == current_entry:
 		string_selector.clear()
-		for stri: IStringContainer in arr:
-			string_selector.add_item(_string_progress_prefix(stri) + stri.content)
+		for string_container: IStringContainer in array:
+			string_selector.add_item(_string_progress_prefix(string_container) + string_container.content)
 
 	# Reseleccionar algo razonable: la siguiente string en la misma posición,
 	# o la última si borramos la última.
@@ -1682,7 +1682,7 @@ func _perform_delete_string(entry_local_name: String, idx: int) -> void:
 	# actualizamos current_string_index. Si el array quedó vacío, lo dejamos
 	# en -1 explícitamente; `_on_item_list_item_selected_str` no se llamaría
 	# (lista vacía) y current_string_index quedaría obsoleto.
-	if arr.is_empty():
+	if array.is_empty():
 		# Editor/similar_entries sólo se tocan si la entry borrada es la cargada.
 		if entry_local_name == current_entry:
 			similar_entries.clear()
@@ -1692,7 +1692,7 @@ func _perform_delete_string(entry_local_name: String, idx: int) -> void:
 			_set_loaded(current_entry, -1)
 	else:
 		if entry_local_name == current_entry:
-			var new_idx: int = min(idx, arr.size() - 1)
+			var new_idx: int = min(idx, array.size() - 1)
 			string_selector.select(new_idx)
 			string_selector.ensure_current_is_visible()
 			# _on_item_list_item_selected_str actualiza current_string_index.
@@ -1716,11 +1716,11 @@ func _purge_ids_from_similar(ids_to_remove: Array) -> void:
 	# Quitar de equal_strings de cada string que sigue viva. Cada array es
 	# compartido por todas las strings del grupo, así que basta con limpiar
 	# una vez por grupo (lo hacemos al recorrer string_sstr_arr abajo).
-	for arr: Array in Handle.string_sstr_arr:
-		var i := arr.size() - 1
+	for array: Array in Handle.string_sstr_arr:
+		var i := array.size() - 1
 		while i >= 0:
-			if id_set.has(arr[i]):
-				arr.remove_at(i)
+			if id_set.has(array[i]):
+				array.remove_at(i)
 			i -= 1
 	# Lo que NO hacemos a propósito (decisiones conscientes, no olvidos):
 	#   1) NO compactamos string_sstr_arr eliminando arrays vacíos. Si lo
@@ -1852,21 +1852,21 @@ func _make_reference_column(title: String, placeholder: String, ratio: float) ->
 	label.add_theme_font_size_override("font_size", _REFERENCE_PANEL_FONT_SIZE)
 	col.add_child(label)
 
-	var te := _make_reference_text_edit(title, placeholder)
-	col.add_child(te)
-	return te
+	var text_edit := _make_reference_text_edit(title, placeholder)
+	col.add_child(text_edit)
+	return text_edit
 
 func _make_reference_text_edit(local_name: String, placeholder: String) -> TextEdit:
-	var te := TextEdit.new()
-	te.name = local_name
-	te.editable = false
-	te.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
-	te.placeholder_text = placeholder
-	te.tooltip_text = "Reference only. This does not get saved to the .txt."
-	te.add_theme_font_size_override("font_size", _REFERENCE_PANEL_FONT_SIZE)
-	te.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	te.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	return te
+	var text_edit := TextEdit.new()
+	text_edit.name = local_name
+	text_edit.editable = false
+	text_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	text_edit.placeholder_text = placeholder
+	text_edit.tooltip_text = "Reference only. This does not get saved to the .txt."
+	text_edit.add_theme_font_size_override("font_size", _REFERENCE_PANEL_FONT_SIZE)
+	text_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_edit.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	return text_edit
 
 func _toggle_reference_panel_collapsed() -> void:
 	reference_panel_collapsed = not reference_panel_collapsed
@@ -1931,12 +1931,12 @@ func _close_reference_fd_window_deferred() -> void:
 	_reference_fd_window = null
 	if not is_instance_valid(w):
 		return
-	var t := create_tween()
-	t.tween_callback(func() -> void:
+	var tween := create_tween()
+	tween.tween_callback(func() -> void:
 		if is_instance_valid(w):
 			w.queue_free()
 	).set_delay(1.0 / 60.0)
-	t.play()
+	tween.play()
 
 func _load_reference_csv(path: String) -> void:
 	# Reference CSVs are intentionally session/file scoped. They are useful while
@@ -2005,25 +2005,25 @@ func _set_reference_column_text(edit: TextEdit, text: String) -> void:
 # ID lejos del rango de IDs internos de TextEdit (Cut/Copy/Paste van por debajo de 30).
 const _MENU_ID_COPY_CLAVE := 1000
 
-func _setup_textedit_clave_menu(te: TextEdit) -> void:
-	var menu: PopupMenu = te.get_menu()
+func _setup_textedit_clave_menu(text_edit: TextEdit) -> void:
+	var menu: PopupMenu = text_edit.get_menu()
 	menu.add_separator()
-	menu.add_item("Copy Clave local_name", _MENU_ID_COPY_CLAVE)
+	menu.add_item("Copy Clave name", _MENU_ID_COPY_CLAVE)
 	menu.id_pressed.connect(_on_textedit_menu_id_pressed)
 	# Habilitar / deshabilitar el ítem según haya o no Clave en la string activa.
 	menu.about_to_popup.connect(func() -> void:
-		var idx := menu.get_item_index(_MENU_ID_COPY_CLAVE)
-		if idx == -1:
+		var item_index := menu.get_item_index(_MENU_ID_COPY_CLAVE)
+		if item_index == -1:
 			return
-		menu.set_item_disabled(idx, _get_current_clave() == "")
+		menu.set_item_disabled(item_index, _get_current_clave() == "")
 	)
 
 func _get_current_clave() -> String:
 	# Bug fix (decoupling): pasamos por la fuente de verdad.
-	var stri := _get_current_string_container()
-	if stri == null:
+	var string_container := _get_current_string_container()
+	if string_container == null:
 		return ""
-	return stri.clave
+	return string_container.key
 
 # Helper para mantener el invariante de "qué está cargado en el editor".
 # change_to y _on_item_list_item_selected_str son los dos call sites
@@ -2080,21 +2080,21 @@ func update_font(i: int, user_change: bool = true) -> void:
 		box.handle.force_update = true
 
 # Devuelve true si el IStringContainer contiene etiquetas de retrato (\E, \F, \P, ...)
-func _string_has_portrait_tags(stri: IStringContainer) -> bool:
-	if stri == null:
+func _string_has_portrait_tags(string_container: IStringContainer) -> bool:
+	if string_container == null:
 		return false
 	var portrait_tags: Array[String] = ["\\E", "\\F", "\\P"]
 	# original_content y layer_strings están tipados (String y Array[String]),
 	# así que no pueden ser null — sólo string/array vacíos. No tiene sentido
 	# chequear null aquí.
-	if not stri.original_content.is_empty():
-		for t in portrait_tags:
-			if stri.original_content.find(t) != -1:
+	if not string_container.original_content.is_empty():
+		for tag in portrait_tags:
+			if string_container.original_content.find(tag) != -1:
 				return true
-	for layer in stri.layer_strings:
+	for layer in string_container.layer_strings:
 		if typeof(layer) == TYPE_STRING:
-			for t in portrait_tags:
-				if (layer as String).find(t) != -1:
+			for tag in portrait_tags:
+				if (layer as String).find(tag) != -1:
 					return true
 	return false
 
@@ -2118,8 +2118,8 @@ func _string_has_portrait_tags(stri: IStringContainer) -> bool:
 const _AUTO_BOX_WITH_ASTERISK: int = 0   # Box1
 const _AUTO_BOX_WITHOUT_ASTERISK: int = 6 # Box7
 
-func _compute_auto_box(stri: IStringContainer) -> int:
-	if stri == null:
+func _compute_auto_box(string_container: IStringContainer) -> int:
+	if string_container == null:
 		return _AUTO_BOX_WITH_ASTERISK
 	# Salvaguarda: si el style cargado todavía no tiene Box7 (p. ej. el
 	# usuario abrió Deltarune sin haber añadido aún la Box7 prometida),
@@ -2128,30 +2128,30 @@ func _compute_auto_box(stri: IStringContainer) -> int:
 	# tampoco muestre un número que no se puede pintar.
 	if Handle.box_data.size() <= _AUTO_BOX_WITHOUT_ASTERISK:
 		return _AUTO_BOX_WITH_ASTERISK
-	if stri.original_content.find("*") != -1:
+	if string_container.original_content.find("*") != -1:
 		return _AUTO_BOX_WITH_ASTERISK
-	if stri.content.find("*") != -1:
+	if string_container.content.find("*") != -1:
 		return _AUTO_BOX_WITH_ASTERISK
 	return _AUTO_BOX_WITHOUT_ASTERISK
 
 # Devuelve la caja que se debe MOSTRAR para una string. Si el usuario ha
 # escogido explícitamente algo distinto del valor por defecto (box_style != 0),
 # se respeta su elección. Si no, se aplica la regla del asterisco.
-func _resolve_box_style(stri: IStringContainer) -> int:
-	if stri == null:
+func _resolve_box_style(string_container: IStringContainer) -> int:
+	if string_container == null:
 		return 0
-	if stri.box_style != 0:
-		return stri.box_style
-	return _compute_auto_box(stri)
+	if string_container.box_style != 0:
+		return string_container.box_style
+	return _compute_auto_box(string_container)
 
 func _on_item_list_item_selected(index: int) -> void:
 	var item := dialogue_selector_entry_at(index)
 	change_to(item)
 	if Handle.strings.has(item):
 		var it: Array = Handle.strings[item]
-		for stri: IStringContainer in it:
+		for string_container: IStringContainer in it:
 			# Prefijo de progreso (Bloque 1): "✓ " si está traducida, "· " si no.
-			string_selector.add_item(_string_progress_prefix(stri) + stri.content)
+			string_selector.add_item(_string_progress_prefix(string_container) + string_container.content)
 		if !it.is_empty():
 			string_selector.select(0)
 			string_selector.ensure_current_is_visible()
@@ -2180,19 +2180,19 @@ func _on_item_list_item_selected_str(index: int) -> void:
 	# los handlers de edición sepan en qué string está el usuario.
 	if current_entry == "" or not Handle.strings.has(current_entry):
 		return
-	var arr: Array = Handle.strings[current_entry]
-	if index < 0 or index >= arr.size():
+	var array: Array = Handle.strings[current_entry]
+	if index < 0 or index >= array.size():
 		return
 	_set_loaded(current_entry, index)
 	current_layer = 0
 	current_layer_node.value = 1
 	similar_entries.clear()
-	var stri: IStringContainer = arr[index]
+	var string_container: IStringContainer = array[index]
 	# Asignamos las cadenas de capas primero
-	Handle.layer_strings = stri.layer_strings
+	Handle.layer_strings = string_container.layer_strings
 
 	# Reiniciar por defecto la casilla "Portrait" al cambiar de línea (condicional para evitar parpadeos)
-	var new_has_portrait := _string_has_portrait_tags(stri)
+	var new_has_portrait := _string_has_portrait_tags(string_container)
 	if not (prev_has_portrait and new_has_portrait):
 		if box:
 			box.portrait_enabled = false
@@ -2201,23 +2201,23 @@ func _on_item_list_item_selected_str(index: int) -> void:
 	prev_has_portrait = new_has_portrait
 
 	if box and box.handle:
-		if str(stri.speaker) != "":
-			box.handle.global_env["speaker"] = str(stri.speaker)
+		if str(string_container.speaker) != "":
+			box.handle.global_env["speaker"] = str(string_container.speaker)
 		else:
 			if box.handle.global_env.has("speaker"):
 				box.handle.global_env.erase("speaker")
-	Handle.layer_colors = stri.layer_colors
-	Handle.original_string = stri.original_content
-	var t := create_tween()
-	t.tween_callback(func() -> void:
-		current_font_node.set_value(stri.font_style + 1)
+	Handle.layer_colors = string_container.layer_colors
+	Handle.original_string = string_container.original_content
+	var tween := create_tween()
+	tween.tween_callback(func() -> void:
+		current_font_node.set_value(string_container.font_style + 1)
 		# Issue #3: en lugar de usar `_stri.box_style` directamente, pasamos
 		# por _resolve_box_style. Si la string tiene caja explícita
 		# (box_style != 0) se respeta; si no, aplicamos la regla del
 		# asterisco (Box1 con `*`, Box7 sin `*`).
-		current_box_node.set_value(_resolve_box_style(stri) + 1)
+		current_box_node.set_value(_resolve_box_style(string_container) + 1)
 	).set_delay(1.0 / 60.0)
-	t.play()
+	tween.play()
 	current_color_node.color = Handle.layer_colors[current_layer]
 	_set_dialogue_edit_text_silent(str(Handle.layer_strings[current_layer]))
 	dialogue_edit.clear_undo_history()
@@ -2231,8 +2231,8 @@ func _on_item_list_item_selected_str(index: int) -> void:
 	last_sthread = Thread.new()
 	last_sthread.start(func() -> void:
 		similar_entries.call_deferred("clear")
-		for sstri in stri.equal_strings:
-			if sstri != stri.id:
+		for sstri in string_container.equal_strings:
+			if sstri != string_container.id:
 				var r: IStringTable = Handle.string_table[sstri]
 				similar_entries.call_deferred("add_item", "%s:%s" % [r.name, r.index + 1])
 	)
@@ -2252,11 +2252,11 @@ func change_to(item: String, index: int = 0) -> void:
 		var it: Array = Handle.strings[item]
 		if it.size() > index and index >= 0:
 			_set_loaded(item, index)
-			var stri: IStringContainer = it[index]
-			Handle.layer_strings = stri.layer_strings
+			var string_container: IStringContainer = it[index]
+			Handle.layer_strings = string_container.layer_strings
 
 			# Reiniciar por defecto la casilla "Portrait" al cambiar de línea (condicional para evitar parpadeos)
-			var new_has_portrait := _string_has_portrait_tags(stri)
+			var new_has_portrait := _string_has_portrait_tags(string_container)
 			if not (prev_has_portrait and new_has_portrait):
 				if box:
 					box.portrait_enabled = false
@@ -2264,21 +2264,21 @@ func change_to(item: String, index: int = 0) -> void:
 					enable_portrait.button_pressed = false
 			prev_has_portrait = new_has_portrait
 
-			if str(stri.speaker) != "":
-				box.handle.global_env["speaker"] = str(stri.speaker)
+			if str(string_container.speaker) != "":
+				box.handle.global_env["speaker"] = str(string_container.speaker)
 			else:
 				if box.handle.global_env.has("speaker"):
 					box.handle.global_env.erase("speaker")
-			Handle.layer_colors = stri.layer_colors
-			Handle.original_string = stri.original_content
-			var t := create_tween()
-			t.tween_callback(func() -> void:
-				current_font_node.set_value(stri.font_style + 1)
+			Handle.layer_colors = string_container.layer_colors
+			Handle.original_string = string_container.original_content
+			var tween := create_tween()
+			tween.tween_callback(func() -> void:
+				current_font_node.set_value(string_container.font_style + 1)
 				# Issue #3: ver _on_item_list_item_selected_str para la
 				# explicación. Mismo razonamiento aquí.
-				current_box_node.set_value(_resolve_box_style(stri) + 1)
+				current_box_node.set_value(_resolve_box_style(string_container) + 1)
 			).set_delay(1.0 / 60.0)
-			t.play()
+			tween.play()
 			current_color_node.color = Handle.layer_colors[current_layer]
 			_set_dialogue_edit_text_silent(str(Handle.layer_strings[current_layer]))
 			dialogue_edit.clear_undo_history()
@@ -2287,8 +2287,8 @@ func change_to(item: String, index: int = 0) -> void:
 			last_sthread = Thread.new()
 			last_sthread.start(func() -> void:
 				similar_entries.call_deferred("clear")
-				for sstri in stri.equal_strings: # String ID
-					if sstri != stri.id:
+				for sstri in string_container.equal_strings: # String ID
+					if sstri != string_container.id:
 						var r: IStringTable = Handle.string_table[sstri]
 						similar_entries.call_deferred("add_item", "%s:%s" % [r.name, r.index + 1])
 			)
@@ -2325,8 +2325,8 @@ func _on_item_list_item_selected_similar(index: int) -> void:
 					similar_entries.call_deferred("add_item", "%s:%s" % [r.name, r.index + 1])
 		)
 		string_selector.clear()
-		for stri: IStringContainer in Handle.strings[item_local_name]:
-			string_selector.add_item(_string_progress_prefix(stri) + str(stri.layer_strings[0]))
+		for string_container: IStringContainer in Handle.strings[item_local_name]:
+			string_selector.add_item(_string_progress_prefix(string_container) + str(string_container.layer_strings[0]))
 		string_selector.select(idx)
 		string_selector.ensure_current_is_visible()
 		for i in range(dialogue_selector.get_item_count()):
@@ -2379,18 +2379,18 @@ func _on_dialogue_edit_text_changed() -> void:
 		# string actual dos pasadas idénticas. Idempotente, pero trabajo
 		# doble por cada tecla pulsada cuando replace_similar está activo.
 		var own_id: int = (arr_curr[ss_idx] as IStringContainer).id
-		var e: Array = ((arr_curr[ss_idx] as IStringContainer).equal_strings as Array).duplicate() if replace_similar.button_pressed else []
-		if not e.has(own_id):
-			e.append(own_id)
+		var equal_strings: Array = ((arr_curr[ss_idx] as IStringContainer).equal_strings as Array).duplicate() if replace_similar.button_pressed else []
+		if not equal_strings.has(own_id):
+			equal_strings.append(own_id)
 		var entry_table := {}
 		var i := 0
-		for _g: IStringContainer in arr_curr:
-			entry_table[_g.id] = i
+		for string_container: IStringContainer in arr_curr:
+			entry_table[string_container.id] = i
 			i += 1
 		Handle.is_modified = true
-		for f: int in e: # Update all strings first (before making the entry table), then change the visualization.
-			var t: IStringTable = Handle.string_table[f]
-			var entr: IStringContainer = Handle.strings[t.name][t.index]
+		for f: int in equal_strings: # Update all strings first (before making the entry table), then change the visualization.
+			var table: IStringTable = Handle.string_table[f]
+			var entr: IStringContainer = Handle.strings[table.name][table.index]
 			var was_translated := Handle.is_string_translated(entr)
 			entr.last_edited.author = author
 			entr.last_edited.timestamp = int(Time.get_unix_time_from_system())
@@ -2398,26 +2398,26 @@ func _on_dialogue_edit_text_changed() -> void:
 			entr.layer_strings[0] = entr.content
 			Handle.string_ids[entr.id] = entr.content # We need to update properly the String ID Dictionary
 			if entry_table.has(entr.id):
-				if entry_table[entr.id] == t.index:
+				if entry_table[entr.id] == table.index:
 					# El item del string_selector también lleva el prefijo de progreso.
 					# Solo lo actualizamos si la entry de _entr coincide con la
 					# entry cargada — string_selector muestra current_entry.
-					if t.name == c:
-						string_selector.set_item_text(t.index, _string_progress_prefix(entr) + dialogue_edit.text)
+					if table.name == c:
+						string_selector.set_item_text(table.index, _string_progress_prefix(entr) + dialogue_edit.text)
 			# SIEMPRE marcamos la entry para refresh: el content cambió, lo
 			# que puede haber alterado el tag mismatch (⚠) aunque la string
 			# siguiera marcada como traducida.
-			entries_to_refresh[t.name] = true
+			entries_to_refresh[table.name] = true
 			if not was_translated:
 				stats_count_changed = true
 	else:
 		Handle.is_modified = true
 		var f: IStringTable = Handle.string_table[(arr_curr[ss_idx] as IStringContainer).id]
-		var entr: IStringContainer = Handle.strings[f.name][f.index]
-		var was_translated := Handle.is_string_translated(entr)
-		entr.last_edited.author = author
-		entr.last_edited.timestamp = int(Time.get_unix_time_from_system())
-		entr.layer_strings[current_layer] = dialogue_edit.text
+		var entry: IStringContainer = Handle.strings[f.name][f.index]
+		var was_translated := Handle.is_string_translated(entry)
+		entry.last_edited.author = author
+		entry.last_edited.timestamp = int(Time.get_unix_time_from_system())
+		entry.layer_strings[current_layer] = dialogue_edit.text
 		# Mismo criterio que en la rama de arriba: refresh de prefijo
 		# siempre, stats solo si cambió el conteo de traducidas.
 		entries_to_refresh[f.name] = true
@@ -2427,7 +2427,7 @@ func _on_dialogue_edit_text_changed() -> void:
 		# no hace falta cambiar el texto del item, pero sí su prefijo. Solo
 		# si la string editada vive en la entry actualmente cargada.
 		if f.name == c:
-			refresh_string_item_prefix(f.index, entr)
+			refresh_string_item_prefix(f.index, entry)
 
 	# Refresco de UI. Coalescemos las partes caras en el Timer del debounce
 	# (refresh_entry_item_prefix corre regex por cada string traducida; con
@@ -2435,8 +2435,8 @@ func _on_dialogue_edit_text_changed() -> void:
 	# ya están escritos arriba, así que un save inmediato encuentra los
 	# valores correctos; lo único que tarda hasta _EDIT_REFRESH_DEBOUNCE_S
 	# en aplicarse es el repintado de prefijos y stats globales.
-	for _en: String in entries_to_refresh.keys():
-		_entries_to_refresh_pending[_en] = true
+	for entry: String in entries_to_refresh.keys():
+		_entries_to_refresh_pending[entry] = true
 	if stats_count_changed:
 		_stats_count_changed_pending = true
 	if _edit_refresh_timer != null:
@@ -2574,17 +2574,17 @@ func open_go_to_menu() -> void:
 	Handle.goto_window = Handle.goto_scene.instantiate()
 	add_child(Handle.goto_window)
 	(Handle.goto_window.get_node("GoTo/GoButton") as Button).pressed.connect(func() -> void:
-		var te := (Handle.goto_window.get_node("GoTo/Str") as LineEdit).text
-		if te.length() > 0:
+		var text := (Handle.goto_window.get_node("GoTo/Str") as LineEdit).text
+		if text.length() > 0:
 			# Bug fix: parseo "local_name:N" robusto a `:` en el nombre (ver _parse_entry_ref).
-			var ref: Array = _parse_entry_ref(te)
+			var ref: Array = _parse_entry_ref(text)
 			var item_local_name: String = ref[0]
 			var idx_zero: int = (ref[1] as int) - 1
 			if Handle.strings.has(item_local_name):
 				change_to(item_local_name, idx_zero)
 				string_selector.clear()
-				for stri: IStringContainer in Handle.strings[item_local_name]:
-					string_selector.add_item(_string_progress_prefix(stri) + str(stri.layer_strings[0]))
+				for string_container: IStringContainer in Handle.strings[item_local_name]:
+					string_selector.add_item(_string_progress_prefix(string_container) + str(string_container.layer_strings[0]))
 				string_selector.select(idx_zero)
 				string_selector.ensure_current_is_visible()
 				for i in range(dialogue_selector.get_item_count()):
@@ -2607,8 +2607,8 @@ func entry_search_text_changed(_t: String) -> void:
 # `_cancel_edit_refresh`) para descartar el pendiente cuando el archivo se
 # cierra. Es idempotente y seguro de llamar con el pendiente vacío.
 func _flush_edit_refresh() -> void:
-	for _en: String in _entries_to_refresh_pending.keys():
-		refresh_entry_item_prefix(_en)
+	for entry: String in _entries_to_refresh_pending.keys():
+		refresh_entry_item_prefix(entry)
 	if _stats_count_changed_pending:
 		update_progress_stats_label()
 	_entries_to_refresh_pending.clear()
@@ -2655,13 +2655,13 @@ func _rebuild_entry_list() -> void:
 	# se notaba al cambiar filtro. Ahora calculamos un "estado agregado" en
 	# una sola pasada por entry y lo usamos para ambas decisiones.
 	dialogue_selector.clear()
-	for e: String in Handle.entry_names:
-		if search_text != "" and not e.to_lower().contains(search_text):
+	for entry_name: String in Handle.entry_names:
+		if search_text != "" and not entry_name.to_lower().contains(search_text):
 			continue
-		var state := _compute_entry_state(e)
+		var state := _compute_entry_state(entry_name)
 		if not _state_passes_filter(state, filter_id):
 			continue
-		dialogue_selector.add_item(_state_to_prefix(state) + e)
+		dialogue_selector.add_item(_state_to_prefix(state) + entry_name)
 
 	# Cortesía visual: si la entry cargada pasa el filtro, marcarla como
 	# seleccionada en la lista. Si no pasa, no se selecciona nada — pero el
@@ -2687,22 +2687,22 @@ func _compute_entry_state(entry_local_name: String) -> Dictionary:
 	}
 	if not Handle.strings.has(entry_local_name):
 		return state
-	var arr: Array = Handle.strings[entry_local_name]
-	if arr.is_empty():
+	var array: Array = Handle.strings[entry_local_name]
+	if array.is_empty():
 		return state
 	state["empty"] = false
-	for stri: IStringContainer in arr:
-		if not Handle.is_string_translated(stri):
+	for string_container: IStringContainer in array:
+		if not Handle.is_string_translated(string_container):
 			state["all_translated"] = false
 			state["any_untranslated"] = true
-		if stri.needs_review:
+		if string_container.needs_review:
 			state["any_review"] = true
 		# Validamos aunque no haya LastEdited. Algunos archivos pueden traer
 		# Content ya distinto/problemas de tags sin metadatos de edición; si
 		# aquí se saltan, la entry no muestra ⚠ hasta que el usuario toca el
 		# texto y se crea LastEdited. Las regex están cacheadas en ITagValidator.
-		var diff := ITagValidator.validate_string(stri)
-		var diff_sign := IClosedSignValidator.validate_string(stri)
+		var diff := ITagValidator.validate_string(string_container)
+		var diff_sign := IClosedSignValidator.validate_string(string_container)
 		if not diff.ok:
 			state["any_mismatch"] = true
 		if not diff_sign.ok:
@@ -2759,8 +2759,8 @@ func _on_add_string_pressed() -> void:
 	# Si hay una string cargada, la pasamos como fuente para el modo "duplicar".
 	# Si no hay (entry vacía o nada cargado), el diálogo caerá en modo "blanco".
 	if current_string_index >= 0:
-		var arr: Array = Handle.strings[current_entry]
-		if current_string_index < arr.size():
+		var array: Array = Handle.strings[current_entry]
+		if current_string_index < array.size():
 			Handle.add_string_window.source_index = current_string_index
-			Handle.add_string_window.source_container = arr[current_string_index]
+			Handle.add_string_window.source_container = array[current_string_index]
 	add_child(Handle.add_string_window)

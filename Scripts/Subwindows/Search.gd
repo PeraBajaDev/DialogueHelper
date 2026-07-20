@@ -94,12 +94,11 @@ func _on_search_button_pressed() -> void:
 	search_results_window = search_results_scene.instantiate()
 	get_parent().add_child(search_results_window)
 	search_results_window.title = "Search results for: " + str(search_for.text)
-	var il: ItemList = search_results_window.get_node("ItemList")
+	var item_list: ItemList = search_results_window.get_node("ItemList")
 	# Capturamos una referencia local al ItemList y a la ventana de progreso
 	# para checkear validez antes de tocarlos desde el worker.
-	var sw := searching_window
 	last_thread.start(func() -> void:
-		var v := 0
+		var progress_value := 0
 		for _entry_local_name: String in data.keys():
 			if _cancelled:
 				return
@@ -110,18 +109,18 @@ func _on_search_button_pressed() -> void:
 				var haystack: String
 				match kind:
 					"Clave":
-						haystack = str(_strg.clave)
+						haystack = str(_strg.key)
 					_:
 						haystack = str(_strg.content)
 				if !do_casing:
 					haystack = haystack.to_lower()
 				if haystack.contains(search):
-					if is_instance_valid(il):
-						il.call_deferred("add_item", _entry_local_name + ":" + str(index + 1))
-				v += 1
+					if is_instance_valid(item_list):
+						item_list.call_deferred("add_item", _entry_local_name + ":" + str(index + 1))
+				progress_value += 1
 				index += 1
-				if is_instance_valid(sw) and is_instance_valid(sw.progress_bar):
-					sw.progress_bar.call_deferred("set_value", v)
+				if is_instance_valid(searching_window) and is_instance_valid(searching_window.progress_bar):
+					searching_window.progress_bar.call_deferred("set_value", progress_value)
 		# Al terminar, ocultamos la ventana de búsqueda y damos foco a los
 		# resultados. Sólo si seguimos vivos y no se canceló.
 		if not _cancelled and is_instance_valid(self):

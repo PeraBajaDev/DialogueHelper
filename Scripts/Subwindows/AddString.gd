@@ -28,7 +28,7 @@ func _ready() -> void:
 	if source_container != null:
 		# Modo DUPLICAR: pre-rellenar con la fuente, contenido y clave bloqueados.
 		# La clave que mostramos en el LineEdit es la que recibirá la nueva string.
-		clave_edit.text = _preview_clave(source_container.clave, entry)
+		clave_edit.text = _preview_clave(source_container.key, entry)
 		clave_edit.editable = false
 		edit_clave_check.button_pressed = false
 		edit_clave_check.disabled = false
@@ -90,10 +90,10 @@ func _preview_clave(source_clave: String, target_entry: String) -> String:
 	var arr: Array = Handle.strings[target_entry] as Array
 	var existing_claves := {}
 	for _s: IStringContainer in arr:
-		existing_claves[_s.clave] = true
+		existing_claves[_s.key] = true
 	var counter: int = 0
 	for _s: IStringContainer in arr:
-		if _is_sp_clave(_s.clave) and _strip_sp_prefix(_s.clave) == base:
+		if _is_sp_clave(_s.key) and _strip_sp_prefix(_s.key) == base:
 			counter += 1
 	var candidate := ("sp_" + base) if counter == 0 else ("sp_" + str(counter) + "_" + base)
 	while existing_claves.has(candidate):
@@ -132,11 +132,11 @@ func _on_ok_button_pressed() -> void:
 
 	if source_container != null and source_index >= 0:
 		# Modo DUPLICAR: insertar al final de la familia sp_*_<base>.
-		var base := _strip_sp_prefix(source_container.clave)
+		var base := _strip_sp_prefix(source_container.key)
 		insert_at = source_index + 1
 		for _i in range(source_index + 1, entries_arr.size()):
 			var s: IStringContainer = entries_arr[_i]
-			if _is_sp_clave(s.clave) and _strip_sp_prefix(s.clave) == base:
+			if _is_sp_clave(s.key) and _strip_sp_prefix(s.key) == base:
 				insert_at = _i + 1
 	elif source_index >= 0 and source_index < entries_arr.size():
 		insert_at = source_index + 1
@@ -159,21 +159,21 @@ func _on_ok_button_pressed() -> void:
 	# Defensa adicional: si por cualquier motivo la clave generada ya existe en
 	# la entry, incrementamos el contador hasta encontrar una libre.
 	if source_container != null and not edit_clave_check.button_pressed:
-		var base := _strip_sp_prefix(source_container.clave)
+		var base := _strip_sp_prefix(source_container.key)
 		var existing_claves := {}
 		for s: IStringContainer in entries_arr:
-			existing_claves[s.clave] = true
+			existing_claves[s.key] = true
 		var counter := 0
 		for s: IStringContainer in entries_arr:
-			if _is_sp_clave(s.clave) and _strip_sp_prefix(s.clave) == base:
+			if _is_sp_clave(s.key) and _strip_sp_prefix(s.key) == base:
 				counter += 1
 		var candidate := ("sp_" + base) if counter == 0 else ("sp_" + str(counter) + "_" + base)
 		while existing_claves.has(candidate):
 			counter += 1
 			candidate = "sp_" + str(counter) + "_" + base
-		sc.clave = candidate
+		sc.key = candidate
 	else:
-		sc.clave = clave_edit.text
+		sc.key = clave_edit.text
 
 	if source_container != null:
 		sc.font_style = source_container.font_style
