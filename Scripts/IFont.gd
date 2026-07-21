@@ -38,27 +38,29 @@ var ascender_offset := 0
 var scale := 1.0
 
 func _init(json: Variant = null) -> void:
-	if json is Dictionary:
-		var json_data: Dictionary = json
-		if json_data.has(&"Name"):
-			name = str(json_data.Name)
-		if json_data.has(&"Texture"):
-			var path := str(Handle.style_get_path("Fonts/%s" % json_data.Texture))
-			if FileAccess.file_exists(path):
-				texture = load(path) if OS.has_feature("editor") else ImageTexture.create_from_image(Image.load_from_file(path))
-		if json_data.has(&"Size"):
-			size = json_data.Size as int
-		if json_data.has(&"Scale"):
-			scale = json_data.Scale as float
-		if json_data.has(&"Ascender"):
-			ascender = json_data.Ascender as int
-		if json_data.has(&"AscenderOffset"):
-			ascender_offset = json_data.AscenderOffset as int
-		if json_data.has(&"Glyphs"):
-			for glyph: Dictionary in json_data.Glyphs:
-				if glyph.has(&"Char"):
-					glyphs[str(glyph.Char)] = IGlyph.new(glyph)
-		_register_escape_aliases()
+	if json is not Dictionary:
+		return
+
+	var json_data: Dictionary = json
+	if json_data.has(&"Name"):
+		name = str(json_data.Name)
+	if json_data.has(&"Texture"):
+		var path := str(Handle.style_get_path("Fonts/%s" % json_data.Texture))
+		if FileAccess.file_exists(path):
+			texture = load(path) if OS.has_feature("editor") else ImageTexture.create_from_image(Image.load_from_file(path))
+	if json_data.has(&"Size"):
+		size = json_data.Size as int
+	if json_data.has(&"Scale"):
+		scale = json_data.Scale as float
+	if json_data.has(&"Ascender"):
+		ascender = json_data.Ascender as int
+	if json_data.has(&"AscenderOffset"):
+		ascender_offset = json_data.AscenderOffset as int
+	if json_data.has(&"Glyphs"):
+		for glyph: Dictionary in json_data.Glyphs:
+			if glyph.has(&"Char"):
+				glyphs[str(glyph.Char)] = IGlyph.new(glyph)
+	_register_escape_aliases()
 
 # Un `X (backtick-escape; p. ej. `%) debe RENDERIZARSE como el carácter literal X.
 # Para que el script del estilo no interprete esa X como secuencia de control,
