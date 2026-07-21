@@ -140,90 +140,110 @@ func _show_no_styles_message() -> void:
 func load_style(new_style: Variant = null) -> void:
 	if new_style is String:
 		style = new_style
+
 	font_metadata.clear()
 	box_metadata.clear()
 	style_metadata.clear()
 	font_data.clear()
 	box_data.clear()
 	user_script_obj = null
-	var logs := PackedStringArray()
 
-	# Si el style pedido no existe en disco (primer arranque del .exe sin
-	# preferencia guardada, o last_style.txt apunta a una carpeta borrada),
-	# intentamos un fallback automático antes de mostrar pantalla de error.
+	var logs: Array[String] = []
+
+	# Fallback automático antes de la carga
 	if not FileAccess.file_exists(style_get_path(&"Metadata.json")):
 		var picked := pick_default_style()
 		if picked == "":
-			# Caso "no hay nada en disco": mensaje amigable con instrucciones.
 			_show_no_styles_message()
 			return
 		if picked != style:
-			# Solo `print`, no `logs.append`: el fallback es información, no
-			# error, y los logs activan la ventana StyleError al final.
-			print("Style \"%s\" was not found. Loading \"%s\" instead." % [style, picked])
+			print('Style "%s" was not found. Loading "%s" instead.' % [style, picked])
 		style = picked
 
 	load_style_window = loading_style_scene.instantiate()
 	add_child(load_style_window)
 	var progress_bar: ProgressBar = load_style_window.get_node(^"ProgressBar")
-	if FileAccess.file_exists(style_get_path(&"Metadata.json")):
-		style_metadata = JSON.parse_string(FileAccess.get_file_as_string(style_get_path(&"Metadata.json")))
-		if style_metadata == null:
-			logs.append("%s had a JSON parsing error." % style_get_relative_path(&"Metadata.json"))
-			style_metadata = {}
-		elif style_metadata.has(&"Script"):
-			# Bug fix: el bloque tenía 4 tabs en lugar de 3, lo que visualmente
-			# lo metía dentro del `elif` siguiente. Funcionaba por accidente
-			# porque GDScript dedent-tolera niveles incorrectos siempre que
-			# sean consistentes, pero un cambio futuro lo rompería en silencio.
-			user_script.source_code = FileAccess.get_file_as_string(style_get_path(str(style_metadata.Script)))
-			var error := user_script.reload()
-			if error != OK:
-				logs.append("Script failed to compile with error %s." % error)
-		if FileAccess.file_exists(style_get_path(&"Fonts/Metadata.json")):
-			font_metadata = JSON.parse_string(FileAccess.get_file_as_string(style_get_path(&"Fonts/Metadata.json")))
-			if font_metadata == null:
-				logs.append("%s had a JSON parsing error." % style_get_relative_path(&"Metadata.json"))
-			elif font_metadata.has(&"Fonts"):
-				progress_bar.max_value += (font_metadata.Fonts as Array).size()
-				for font: String in font_metadata.Fonts as Array:
-					if FileAccess.file_exists(style_get_path("Fonts/%s.json" % font)):
-						var font_json: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(style_get_path("Fonts/%s.json" % font)))
-						if font_json == null:
-							logs.append("%s had a JSON parsing error." % style_get_relative_path("Fonts/%s.json" % font))
-						else:
-							font_data.append(IFont.new(font_json))
-						progress_bar.value += 1
-					else:
-						logs.append("%s does not exist." % style_get_relative_path("Fonts/%s.json" % font))
-		else:
-			logs.append("%s does not exist." % style_get_relative_path(&"Fonts/Metadata.json"))
-		if FileAccess.file_exists(style_get_path(&"Boxes/Metadata.json")):
-			box_metadata = JSON.parse_string(FileAccess.get_file_as_string(style_get_path(&"Boxes/Metadata.json")))
-			if box_metadata == null:
-				logs.append("%s had a JSON parsing error." % style_get_relative_path(&"Metadata.json"))
-			elif box_metadata.has("Boxes"):
-				progress_bar.max_value += (box_metadata.Boxes as Array).size()
-				for box: String in box_metadata.Boxes as Array:
-					if FileAccess.file_exists(style_get_path("Boxes/%s.json" % box)):
-						var box_json: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(style_get_path("Boxes/%s.json" % box)))
-						if box_json == null:
-							logs.append("%s had a JSON parsing error." % style_get_relative_path("Boxes/%s.json" % box))
-						else:
-							box_data.append(IBox.new(box_json))
-					else:
-						logs.append("%s does not exist." % style_get_relative_path("Boxes/%s.json" % box))
-					progress_bar.value += 1
-		else:
-			logs.append("%s does not exist." % style_get_relative_path(&"Boxes/Metadata.json"))
-		progress_bar.value = progress_bar.max_value
-	else:
-		logs.append("Style Path \"%s\" was not found." % style_get_relative_path(&""))
+
+	# Cláusula de guarda si tras el fallback tampoco existe el archivo
+	if not FileAccess.file_exists(style_get_path(&"Metadata.json")):
+		logs.append('Style Path "%s" was not found.' % style_get_relative_path(&""))
+		load_style_window.queue_free()
+		_show_error_window_if_needed(logs)
+		return
+
+	_process_main_metadata(logs)
+	_process_fonts(progress_bar, logs)
+	_process_boxes(progress_bar, logs)
+
+	progress_bar.value = progress_bar.max_value
 	load_style_window.queue_free()
-	if !logs.is_empty(): # An error ocurred.
-		style_error_window = style_error_scene.instantiate()
-		(style_error_window.get_node(^"TextEdit") as TextEdit).text = "\n".join(PackedStringArray(logs))
-		add_child(style_error_window)
+	_show_error_window_if_needed(logs)
+
+func _load_json_dict(relative_path: StringName, logs: Array[String]) -> Dictionary:
+	var full_path := style_get_path(relative_path)
+
+	if not FileAccess.file_exists(full_path):
+		logs.append("%s does not exist." % style_get_relative_path(relative_path))
+		return {}
+
+	var parsed: Dictionary= JSON.parse_string(FileAccess.get_file_as_string(full_path))
+	if parsed == null or not (parsed is Dictionary):
+		logs.append("%s had a JSON parsing error." % style_get_relative_path(relative_path))
+		return {}
+
+	return parsed
+
+
+func _process_main_metadata(logs: Array[String]) -> void:
+	style_metadata = _load_json_dict(&"Metadata.json", logs)
+	if not style_metadata.has(&"Script"):
+		return
+
+	user_script.source_code = FileAccess.get_file_as_string(style_get_path(str(style_metadata.Script)))
+	var error := user_script.reload()
+	if error != OK:
+		logs.append("Script failed to compile with error %s." % error)
+
+
+func _process_fonts(progress_bar: ProgressBar, logs: Array[String]) -> void:
+	font_metadata = _load_json_dict(&"Fonts/Metadata.json", logs)
+	if not font_metadata.has(&"Fonts"):
+		return
+
+	var fonts: Array = font_metadata.Fonts
+	progress_bar.max_value += fonts.size()
+
+	for font: String in fonts:
+		var font_path := "Fonts/%s.json" % font
+		var font_json := _load_json_dict(font_path, logs)
+		if not font_json.is_empty():
+			font_data.append(IFont.new(font_json))
+		progress_bar.value += 1
+
+
+func _process_boxes(progress_bar: ProgressBar, logs: Array[String]) -> void:
+	box_metadata = _load_json_dict(&"Boxes/Metadata.json", logs)
+	if not box_metadata.has(&"Boxes"):
+		return
+
+	var boxes: Array = box_metadata.Boxes
+	progress_bar.max_value += boxes.size()
+
+	for box: String in boxes:
+		var box_path := "Boxes/%s.json" % box
+		var box_json := _load_json_dict(box_path, logs)
+		if not box_json.is_empty():
+			box_data.append(IBox.new(box_json))
+		progress_bar.value += 1
+
+
+func _show_error_window_if_needed(logs: Array[String]) -> void:
+	if logs.is_empty():
+		return
+
+	style_error_window = style_error_scene.instantiate()
+	(style_error_window.get_node(^"TextEdit") as TextEdit).text = "\n".join(PackedStringArray(logs))
+	add_child(style_error_window)
 
 func style_get_path(path: String, style_file_name: String = style) -> String:
 	return "res://Styles/%s/%s" % [style_file_name, path]
