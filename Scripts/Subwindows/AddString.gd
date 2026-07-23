@@ -110,7 +110,7 @@ func _on_edit_clave_toggled(toggled_on: bool) -> void:
 	if toggled_on:
 		if clave_edit.has_focus():
 			clave_edit.release_focus()
-		clave_edit.call_deferred("grab_focus")
+		clave_edit.grab_focus.call_deferred()
 		clave_edit.caret_column = clave_edit.text.length()
 
 func _on_edit_original_toggled(toggled_on: bool) -> void:
@@ -118,7 +118,7 @@ func _on_edit_original_toggled(toggled_on: bool) -> void:
 	if toggled_on:
 		if content_edit.has_focus():
 			content_edit.release_focus()
-		content_edit.call_deferred("grab_focus")
+		content_edit.grab_focus.call_deferred()
 
 func _on_close_requested() -> void:
 	queue_free()

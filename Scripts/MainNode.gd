@@ -271,7 +271,7 @@ func _ready() -> void:
 		if Handle.list_available_styles().size() >= 2:
 			# Diferimos al siguiente frame para que el resto de _ready termine
 			# de configurar la UI antes de superponer el diálogo modal.
-			call_deferred("_show_style_picker")
+			_show_style_picker()
 	font = IFont.get_font(Handle.current_font)
 	update_box(current_box, false)
 	update_font(current_font_id, false)
@@ -289,7 +289,7 @@ func _ready() -> void:
 	# anterior. Diferido para que el resto de la UI esté lista cuando
 	# se superponga el diálogo modal (de existir).
 	_ready_autosave()
-	call_deferred("_check_autosave_recovery")
+	_check_autosave_recovery()
 
 func _process(_delta: float) -> void:
 	if last_size != tree.root.size:
@@ -2230,11 +2230,11 @@ func _on_item_list_item_selected_str(index: int) -> void:
 		last_sthread.wait_to_finish()
 	last_sthread = Thread.new()
 	last_sthread.start(func() -> void:
-		similar_entries.call_deferred("clear")
+		similar_entries.clear.call_deferred()
 		for sstri in string_container.equal_strings:
 			if sstri != string_container.id:
 				var r: IStringTable = Handle.string_table[sstri]
-				similar_entries.call_deferred("add_item", "%s:%s" % [r.name, r.index + 1])
+				similar_entries.add_item.call_deferred("%s:%s" % [r.name, r.index + 1])
 	)
 
 func change_to(item: String, index: int = 0) -> void:
@@ -2286,11 +2286,11 @@ func change_to(item: String, index: int = 0) -> void:
 				last_sthread.wait_to_finish()
 			last_sthread = Thread.new()
 			last_sthread.start(func() -> void:
-				similar_entries.call_deferred("clear")
+				similar_entries.clear.call_deferred()
 				for sstri in string_container.equal_strings: # String ID
 					if sstri != string_container.id:
 						var r: IStringTable = Handle.string_table[sstri]
-						similar_entries.call_deferred("add_item", "%s:%s" % [r.name, r.index + 1])
+						similar_entries.add_item.call_deferred( "%s:%s" % [r.name, r.index + 1])
 			)
 		else:
 			# Entry existe pero el índice está fuera de rango (típicamente entry
@@ -2301,7 +2301,7 @@ func change_to(item: String, index: int = 0) -> void:
 				last_sthread.wait_to_finish()
 			last_sthread = Thread.new()
 			last_sthread.start(func() -> void:
-				similar_entries.call_deferred("clear")
+				similar_entries.clear.call_deferred()
 			)
 
 func _on_item_list_item_selected_similar(index: int) -> void:
@@ -2317,12 +2317,12 @@ func _on_item_list_item_selected_similar(index: int) -> void:
 			last_sthread.wait_to_finish()
 		last_sthread = Thread.new()
 		last_sthread.start(func() -> void:
-			similar_entries.call_deferred("clear")
+			similar_entries.clear.call_deferred()
 			var src: IStringContainer = Handle.strings[item_local_name][idx]
 			for sstri: int in src.equal_strings: # String ID
 				if sstri != src.id:
 					var r: IStringTable = Handle.string_table[sstri]
-					similar_entries.call_deferred("add_item", "%s:%s" % [r.name, r.index + 1])
+					similar_entries.add_item.call_deferred( "%s:%s" % [r.name, r.index + 1])
 		)
 		string_selector.clear()
 		for string_container: IStringContainer in Handle.strings[item_local_name]:

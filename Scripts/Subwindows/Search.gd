@@ -116,15 +116,15 @@ func _on_search_button_pressed() -> void:
 					haystack = haystack.to_lower()
 				if haystack.contains(search):
 					if is_instance_valid(item_list):
-						item_list.call_deferred("add_item", _entry_local_name + ":" + str(index + 1))
+						item_list.add_item.call_deferred( _entry_local_name + ":" + str(index + 1))
 				progress_value += 1
 				index += 1
 				if is_instance_valid(searching_window) and is_instance_valid(searching_window.progress_bar):
-					searching_window.progress_bar.call_deferred("set_value", progress_value)
+					searching_window.progress_bar.set_value.call_deferred(progress_value)
 		# Al terminar, ocultamos la ventana de búsqueda y damos foco a los
 		# resultados. Sólo si seguimos vivos y no se canceló.
 		if not _cancelled and is_instance_valid(self):
-			call_deferred("set_visible", false)
+			set_visible.call_deferred(false)
 		if not _cancelled and is_instance_valid(search_results_window):
-			search_results_window.call_deferred("grab_focus")
+			search_results_window.grab_focus.call_deferred()
 	)

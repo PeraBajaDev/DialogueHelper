@@ -53,7 +53,7 @@ func load_file(path: String, override_path: String = "", override_modified: bool
 	current_thread.start(func() -> void:
 		var cleanup_on_fail := func() -> void:
 			if Handle.loading_window != null:
-				Handle.loading_window.call_deferred("queue_free")
+				Handle.loading_window.queue_free.call_deferred()
 		if FileAccess.file_exists("user://enable_git.bool"):
 			Handle.loading_window.label.set_text.call_deferred("Fetching the git repo...")
 			var git_response := Handle.git.pull()
@@ -411,7 +411,7 @@ func _save_phase_write(path: String) -> void:
 		Handle.saving_window.label.set_text.call_deferred("Saving the file...")
 		var ok := _write_data(path, data)
 		if not ok:
-			Handle.saving_window.call_deferred("queue_free")
+			Handle.saving_window.queue_free.call_deferred()
 			io_in_progress = false
 			_join_write_thread.call_deferred()
 			return
@@ -423,25 +423,25 @@ func _save_phase_write(path: String) -> void:
 		Handle.set_deferred(&"is_modified", false)
 		Handle.set_deferred(&"current_file_path", path)
 		if Handle.main_node != null:
-			Handle.main_node.call_deferred(&"update_window_title")
+			Handle.main_node.update_window_title.call_deferred()
 			# Bloque 1: registrar en Open Recent. push_recent_file ignora rutas
 			# de user:// (modo git) automáticamente, así que es seguro llamarla
 			# en ambos caminos.
-			Handle.main_node.call_deferred(&"push_recent_file", path)
+			Handle.main_node.push_recent_file.call_deferred(path)
 			# Bloque 3: el archivo se guardó OK; el autosave es ya basura,
 			# lo descartamos para que no aparezca el diálogo de recuperación
 			# en el próximo arranque.
-			Handle.main_node.call_deferred(&"_discard_autosave_files")
+			Handle.main_node._discard_autosave_files.call_deferred()
 		if FileAccess.file_exists("user://enable_git.bool"):
 			Handle.saving_window.label.set_text.call_deferred("Commiting on the git repo...")
 			var git_response := Handle.git.commit("[DH] Update Strings")
 			Handle.handle_git_output.call_deferred(git_response)
 			if !git_response.success:
-				Handle.saving_window.call_deferred("queue_free")
+				Handle.saving_window.queue_free.call_deferred()
 				io_in_progress = false
 				_join_write_thread.call_deferred()
 				return
-		Handle.saving_window.call_deferred("queue_free")
+		Handle.saving_window.queue_free.call_deferred()
 		io_in_progress = false
 		_join_write_thread.call_deferred()
 	)
